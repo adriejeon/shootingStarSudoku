@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
+import '../services/audio_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,31 +12,60 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEnabled = true;
+  bool _backgroundMusicEnabled = true;
+  bool _soundEffectsEnabled = true;
   bool _vibrationEnabled = true;
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final audioService = AudioService();
+
+    setState(() {
+      _backgroundMusicEnabled = audioService.isMusicEnabled;
+      _soundEffectsEnabled = audioService.isSoundEnabled;
+      _vibrationEnabled =
+          prefs.getBool(AppConstants.keyVibrationEnabled) ?? true;
+      _notificationsEnabled =
+          prefs.getBool(AppConstants.keyNotificationsEnabled) ?? true;
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+      AppConstants.keyBackgroundMusicEnabled,
+      _backgroundMusicEnabled,
+    );
+    await prefs.setBool(
+      AppConstants.keySoundEffectsEnabled,
+      _soundEffectsEnabled,
+    );
+    await prefs.setBool(AppConstants.keyVibrationEnabled, _vibrationEnabled);
+    await prefs.setBool(
+      AppConstants.keyNotificationsEnabled,
+      _notificationsEnabled,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('설정'),
-        backgroundColor: const Color(AppConstants.backgroundColor),
+        backgroundColor: const Color(0xFF080C2B),
         foregroundColor: Colors.white,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(AppConstants.backgroundColor),
-              Color(0xFF1E293B),
-            ],
-          ),
-        ),
+        decoration: const BoxDecoration(color: Color(0xFF080C2B)),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
@@ -41,25 +73,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: '게임 설정',
                   children: [
                     _buildSwitchTile(
-                      icon: Icons.volume_up,
-                      title: '사운드',
-                      subtitle: '효과음 및 배경음악',
-                      value: _soundEnabled,
-                      onChanged: (value) {
+                      icon: Icons.music_note,
+                      title: '배경음악',
+                      subtitle: '게임 배경음악 재생',
+                      value: _backgroundMusicEnabled,
+                      onChanged: (value) async {
                         setState(() {
-                          _soundEnabled = value;
+                          _backgroundMusicEnabled = value;
                         });
+                        await AudioService().setMusicEnabled(value);
+                        _saveSettings();
+                      },
+                    ),
+                    _buildSwitchTile(
+                      icon: Icons.volume_up,
+                      title: '효과음',
+                      subtitle: '버튼 클릭 및 게임 효과음',
+                      value: _soundEffectsEnabled,
+                      onChanged: (value) async {
+                        setState(() {
+                          _soundEffectsEnabled = value;
+                        });
+                        await AudioService().setSoundEnabled(value);
+                        _saveSettings();
                       },
                     ),
                     _buildSwitchTile(
                       icon: Icons.vibration,
-                      title: '진동',
+                      title: '진동 효과',
                       subtitle: '터치 시 진동 피드백',
                       value: _vibrationEnabled,
                       onChanged: (value) {
                         setState(() {
                           _vibrationEnabled = value;
                         });
+                        _saveSettings();
+                        // 진동 효과가 켜져 있으면 토글 시 진동 발생
+                        if (value) {
+                          HapticFeedback.mediumImpact();
+                        }
                       },
                     ),
                     _buildSwitchTile(
@@ -71,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         setState(() {
                           _notificationsEnabled = value;
                         });
+                        _saveSettings();
                       },
                     ),
                   ],
@@ -110,6 +163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 40), // 하단 여유 공간 추가
               ],
             ),
           ),
@@ -139,9 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: const Color(AppConstants.cardColor),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -155,10 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.white,
-      ),
+      leading: Icon(icon, color: Colors.white),
       title: Text(
         title,
         style: const TextStyle(
@@ -168,14 +217,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.7)),
       ),
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(AppConstants.primaryColor),
+        activeColor: Colors.white, // 흰색
+        activeTrackColor: const Color(0xFF4A90E2), // 밝은 파란색 트랙
       ),
     );
   }
@@ -186,10 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String subtitle,
   }) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.white,
-      ),
+      leading: Icon(icon, color: Colors.white),
       title: Text(
         title,
         style: const TextStyle(
@@ -199,9 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.7)),
       ),
     );
   }
@@ -213,22 +256,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.red,
-      ),
+      leading: Icon(icon, color: Colors.red),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Colors.red,
-          fontWeight: FontWeight.w500,
-        ),
+        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.7)),
       ),
       onTap: onTap,
     );
@@ -239,9 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('데이터 초기화'),
-        content: const Text(
-          '모든 게임 데이터가 삭제됩니다.\n정말로 진행하시겠습니까?',
-        ),
+        content: const Text('모든 게임 데이터가 삭제됩니다.\n정말로 진행하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -251,16 +284,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               // TODO: 데이터 초기화 로직 구현
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('데이터가 초기화되었습니다'),
-                ),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('데이터가 초기화되었습니다')));
             },
-            child: const Text(
-              '초기화',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('초기화', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

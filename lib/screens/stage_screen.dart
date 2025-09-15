@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/user_progress_state.dart';
-import '../state/profile_manager_state.dart';
 import '../utils/constants.dart';
 import 'game_screen.dart';
 
@@ -161,19 +160,27 @@ class _StageScreenState extends State<StageScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/bg1.png'),
+            image: AssetImage('assets/images/bg${widget.stageNumber}.png'),
             fit: BoxFit.cover,
+            alignment: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(context),
-              Expanded(child: _buildLevelsGrid(context)),
+              _buildHeader(context, isTablet, screenSize),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: _buildLevelsGrid(context, isTablet, screenSize),
+                ),
+              ),
             ],
           ),
         ),
@@ -181,63 +188,151 @@ class _StageScreenState extends State<StageScreen>
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool isTablet, Size screenSize) {
+    final titleHeight = isTablet ? screenSize.height * 0.08 : 70.0;
+    final iconSize = isTablet ? screenSize.width * 0.04 : 28.0;
+    final padding = isTablet ? screenSize.width * 0.03 : 20.0;
+
     return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
+      padding: EdgeInsets.all(padding),
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const Spacer(),
-              // 스토리 모달 버튼
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.amber.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () => _showStoryModal(context),
-                  icon: const Icon(
-                    Icons.menu_book,
-                    color: Colors.amber,
-                    size: 28,
-                  ),
-                  tooltip: '행성 스토리',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+          // 타이틀 이미지 (왼쪽 정렬, 크기 증가)
           Image.asset(
-            'assets/images/title1.png',
-            height: 80,
+            'assets/images/title${widget.stageNumber}.png',
+            height: titleHeight,
             fit: BoxFit.contain,
+          ),
+          const Spacer(),
+          // 스토리 모달 버튼
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(isTablet ? 30 : 20),
+              border: Border.all(
+                color: Colors.amber.withOpacity(0.5),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: () => _showStoryModal(context),
+              icon: Image.asset(
+                'assets/images/icon-info.png',
+                width: iconSize,
+                height: iconSize,
+                fit: BoxFit.contain,
+              ),
+              tooltip: '행성 스토리',
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLevelsGrid(BuildContext context) {
+  Widget _buildNavigationButtons(
+    BuildContext context,
+    bool isTablet,
+    Size screenSize,
+  ) {
+    final buttonSize = isTablet ? screenSize.width * 0.08 : 60.0;
+    final padding = isTablet ? screenSize.width * 0.03 : 20.0;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 10.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 뒤로 가기 버튼
+          GestureDetector(
+            onTap: () {
+              if (widget.stageNumber > 1) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StageScreen(
+                      stageNumber: widget.stageNumber - 1,
+                      skipAnimation: true,
+                    ),
+                  ),
+                );
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            child: Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(buttonSize / 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Image.asset(
+                'assets/images/btn-back.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          // 앞으로 가기 버튼
+          GestureDetector(
+            onTap: widget.stageNumber < 9
+                ? () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StageScreen(
+                          stageNumber: widget.stageNumber + 1,
+                          skipAnimation: true,
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+            child: Container(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(buttonSize / 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Opacity(
+                opacity: widget.stageNumber < 9 ? 1.0 : 0.5,
+                child: Image.asset(
+                  'assets/images/btn-front.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelsGrid(
+    BuildContext context,
+    bool isTablet,
+    Size screenSize,
+  ) {
     return Consumer<UserProgressState>(
       builder: (context, userProgress, child) {
         // 프로필이 없어도 기본 레벨 그리드 표시
@@ -253,8 +348,11 @@ class _StageScreenState extends State<StageScreen>
           'Current completed levels: ${userProgress.currentProfile?.completedLevels}',
         );
 
+        final padding = isTablet ? screenSize.width * 0.08 : 20.0;
+        final spacing = isTablet ? screenSize.height * 0.025 : 20.0;
+
         return Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(padding),
           child: Column(
             children: [
               // 첫 번째 줄: 3x3 레벨 (1-4)
@@ -264,8 +362,10 @@ class _StageScreenState extends State<StageScreen>
                 1,
                 4,
                 AppConstants.easyDifficulty,
+                isTablet,
+                screenSize,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: spacing),
 
               // 두 번째 줄: 6x6 레벨 (5-8)
               _buildLevelRow(
@@ -274,8 +374,10 @@ class _StageScreenState extends State<StageScreen>
                 5,
                 8,
                 AppConstants.mediumDifficulty,
+                isTablet,
+                screenSize,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: spacing),
 
               // 세 번째 줄: 6x6 레벨 (9-12)
               _buildLevelRow(
@@ -284,8 +386,10 @@ class _StageScreenState extends State<StageScreen>
                 9,
                 12,
                 AppConstants.mediumDifficulty,
+                isTablet,
+                screenSize,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: spacing),
 
               // 네 번째 줄: 9x9 레벨 (13-16)
               _buildLevelRow(
@@ -294,8 +398,10 @@ class _StageScreenState extends State<StageScreen>
                 13,
                 16,
                 AppConstants.hardDifficulty,
+                isTablet,
+                screenSize,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: spacing),
 
               // 다섯 번째 줄: 9x9 레벨 (17-20)
               _buildLevelRow(
@@ -304,7 +410,13 @@ class _StageScreenState extends State<StageScreen>
                 17,
                 20,
                 AppConstants.hardDifficulty,
+                isTablet,
+                screenSize,
               ),
+              SizedBox(height: spacing * 1.5),
+
+              // 네비게이션 버튼들
+              _buildNavigationButtons(context, isTablet, screenSize),
             ],
           ),
         );
@@ -318,6 +430,8 @@ class _StageScreenState extends State<StageScreen>
     int startLevel,
     int endLevel,
     int difficulty,
+    bool isTablet,
+    Size screenSize,
   ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -328,6 +442,8 @@ class _StageScreenState extends State<StageScreen>
           userProgress,
           levelNumber,
           difficulty,
+          isTablet,
+          screenSize,
         );
       }),
     );
@@ -338,6 +454,8 @@ class _StageScreenState extends State<StageScreen>
     UserProgressState userProgress,
     int levelNumber,
     int difficulty,
+    bool isTablet,
+    Size screenSize,
   ) {
     bool isUnlocked = _isLevelUnlocked(userProgress, levelNumber);
     bool isCompleted = _isLevelCompleted(userProgress, levelNumber);
@@ -370,9 +488,11 @@ class _StageScreenState extends State<StageScreen>
             }
           : null,
       child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+        width: isTablet ? screenSize.width * 0.1 : 60,
+        height: isTablet ? screenSize.width * 0.1 : 60,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(isTablet ? 15 : 8),
+        ),
         child: Stack(
           children: [
             // 애니메이션이 완료되지 않았으면 success 이미지 표시
@@ -423,7 +543,12 @@ class _StageScreenState extends State<StageScreen>
   }
 
   bool _isLevelUnlocked(UserProgressState userProgress, int levelNumber) {
-    // 첫 번째 레벨은 항상 언락
+    // 스테이지가 잠겨있으면 모든 레벨이 잠김
+    if (userProgress.isStageLocked(widget.stageNumber)) {
+      return false;
+    }
+
+    // 첫 번째 레벨은 항상 언락 (스테이지가 잠금 해제된 경우)
     if (levelNumber == 1) return true;
 
     // 프로필이 없으면 첫 번째 레벨만 언락
@@ -487,8 +612,6 @@ class _StageScreenState extends State<StageScreen>
               // 제목
               Row(
                 children: [
-                  Icon(Icons.auto_stories, color: Colors.amber, size: 28),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       storyTitle,
@@ -537,31 +660,6 @@ class _StageScreenState extends State<StageScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // 닫기 버튼
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber.withOpacity(0.2),
-                  foregroundColor: Colors.amber,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    side: BorderSide(
-                      color: Colors.amber.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: const Text(
-                  '모험 시작하기',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
             ],
           ),
         ),
@@ -574,21 +672,21 @@ class _StageScreenState extends State<StageScreen>
       case 1:
         return '반짝이 행성의 전설';
       case 2:
-        return '푸른 달의 비밀';
+        return '방울이 행성의 멜로디';
       case 3:
-        return '불타는 태양의 수수께끼';
+        return '구름이 행성의 무지개';
       case 4:
-        return '얼음 혜성의 미스터리';
+        return '꼬마젤리 행성의 축제';
       case 5:
-        return '무지개 성운의 신화';
+        return '똑똑이 행성의 도서관';
       case 6:
-        return '검은 홀의 전설';
+        return '숲지기 행성의 생명';
       case 7:
-        return '크리스탈 위성의 이야기';
+        return '꼬마번개 행성의 에너지';
       case 8:
-        return '황금 소행성의 보물';
+        return '따뜻이 행성의 온기';
       case 9:
-        return '은하수의 마지막 비밀';
+        return '어둠이 행성의 이야기';
       default:
         return '우주의 신비';
     }
@@ -597,29 +695,23 @@ class _StageScreenState extends State<StageScreen>
   String _getStoryContent() {
     switch (widget.stageNumber) {
       case 1:
-        return '''우주 한 켠에 반짝이는 것을 무엇보다 사랑하는 작은 요정 '반짝이'가 살고 있는 아름다운 행성이 있었습니다.
-
-반짝이 행성은 수많은 반짝이는 별들로 가득했고, 반짝이는 그 별들과 함께 행복하게 살고 있었어요.
-
-하지만 어느 날, 거대한 별똥별이 행성과 충돌하면서 모든 반짝이는 별들이 조각조각 흩어져 버렸습니다!
-
-반짝이는 너무나 슬퍼했고, 흩어진 별조각들을 다시 모아야만 행성의 빛을 되찾을 수 있다는 것을 알게 되었습니다.
-
-당신은 반짝이를 도와 흩어진 별조각들을 올바른 자리에 배치하여 반짝이 행성의 빛을 되찾아 주세요!
-
-각 퍼즐을 완성할 때마다 별조각 하나가 제자리를 찾아가고, 모든 퍼즐을 완성하면 반짝이 행성이 다시 아름답게 빛날 것입니다.''';
+        return '''우주 한편에 반짝이는 것을 무엇보다 사랑하는 작은 요정 '반짝이'가 살고 있는 아름다운 행성이 있었습니다. 반짝이 행성은 수많은 반짝이는 별들로 가득했고, 반짝이는 그 별들과 함께 행복하게 살고 있었어요. 하지만 어느 날, 거대한 별똥별이 행성과 충돌하면서 모든 반짝이는 별들이 조각조각 흩어져 버렸습니다! 반짝이는 너무나 슬펐고, 흩어진 별 조각들을 다시 모아야만 행성의 빛을 되찾을 수 있다는 것을 알게 되었습니다.''';
       case 2:
-        return '''신비로운 푸른 달에는 고대의 지혜가 숨겨져 있습니다.
-
-달의 크레이터마다 숨겨진 암호를 풀어야만 다음 단계로 나아갈 수 있어요.
-
-푸른 달의 수호자가 당신을 기다리고 있습니다.''';
+        return '''이곳은 온 세상이 맑고 투명한 물로 이루어진 방울이 행성이에요. 행성의 별들은 '별방울'이라 불렸는데, 이 별방울들이 수면 위로 떠오를 때마다 아름다운 멜로디가 울려 퍼졌죠. 하지만 거대한 별똥별이 행성의 바다와 충돌하면서, 모든 별방울이 깨져버렸어요! 그 후로 방울이 행성의 아름다운 음악은 멈추고 말았답니다. 방울이는 깨진 별방울 조각을 다시 맞춰 행성의 멜로디를 되찾고 싶어 해요.''';
       case 3:
-        return '''불타는 태양 속에는 뜨거운 에너지의 비밀이 숨겨져 있습니다.
-
-태양의 흑점들이 만드는 패턴을 해독해야 합니다.
-
-태양신의 시험을 통과하여 진정한 용기를 증명하세요.''';
+        return '''푹신푹신 구름으로 가득한 이곳은 구름이 행성이랍니다. 이곳의 별들은 '솜사탕 별'이라고 불렸어요. 낮에는 햇살을 머금고, 밤에는 스스로 무지갯빛을 내며 구름 세상을 아름답게 비춰주었죠. 별똥별이 부딪히는 바람에 솜사탕 별들이 산산조각 나면서, 행성은 온통 잿빛 구름에 갇히게 되었어요. 낮잠 자는 것을 가장 좋아했던 구름이는 알록달록한 꿈을 꾸기 위해 흩어진 별 조각을 모으기로 결심했어요.''';
+      case 4:
+        return '''말랑말랑! 탱글탱글! 온통 젤리로 만들어진 꼬마젤리 행성에 오신 것을 환영해요! 이곳의 별들은 '탱탱볼 별'이었어요. 통통 튀어 오를 때마다 달콤한 에너지를 만들어내서, 행성 전체가 신나는 축제 같았죠. 하지만 별똥별이 떨어진 후, 탱탱볼 별들은 조각나 바닥에 끈적이게 붙어버렸어요. 행성의 신나는 축제도 멈춰버렸죠. 장난꾸러기 꼬마젤리는 다시 행성을 방방 뛰게 만들기 위해 당신의 도움이 필요해요!''';
+      case 5:
+        return '''반짝이는 거대한 크리스탈이 지식의 숲을 이루는 이곳은 똑똑이 행성입니다. 행성의 별들은 '지혜의 별'이라 불리며, 그 빛 속에는 우주의 모든 지식과 이야기가 담겨 있었어요. 별똥별 충돌로 지혜의 별들이 조각나자, 행성의 모든 지식이 뒤죽박죽 섞여버렸습니다! 똑똑박사 똑똑이는 뒤섞인 지식을 바로잡고 행성의 위대한 도서관을 복원하기 위해 별 조각들을 맞추고 있어요.''';
+      case 6:
+        return '''싱그러운 풀과 나무가 가득한 이곳은 숲지기 행성이에요. 밤하늘의 별들은 '생명의 별'이라 불렸는데, 이 별빛을 받은 식물들은 마법처럼 무럭무럭 자라났답니다. 하지만 거대한 별똥별이 숲을 덮치면서 생명의 별들이 모두 조각나 버렸고, 행성의 식물들은 시들기 시작했어요. 마음씨 착한 숲지기는 사랑하는 숲을 되살리기 위해 흩어진 생명의 별 조각들을 애타게 찾고 있답니다.''';
+      case 7:
+        return '''찌릿찌릿! 짜릿한 에너지가 넘치는 이곳은 꼬마번개 행성이랍니다. 이곳의 별들은 '에너지 별'로, 행성 전체에 강력한 에너지를 공급해 주었어요. 덕분에 행성의 하늘에서는 매일 밤 멋진 번개 쇼가 펼쳐졌죠. 별똥별 충돌 이후, 에너지 별들이 모두 부서져 행성은 힘을 잃고 어두워졌어요. 활발한 꼬마번개는 이 조용한 어둠이 너무 심심해요! 어서 별 조각을 모아 다시 짜릿한 번개 쇼를 시작하고 싶어 해요.''';
+      case 8:
+        return '''포근한 사랑의 기운이 가득한 이곳은 따뜻이 행성이에요. 하늘에 떠 있는 별들은 '마음의 별'로, 언제나 따스한 온기를 행성 곳곳에 나눠주었답니다. 하지만 별똥별이 떨어지며 마음의 별들이 차갑게 조각나 버렸고, 행성에는 외롭고 쓸쓸한 기운이 퍼지기 시작했어요. 다정한 따뜻이는 모두의 마음을 다시 따뜻하게 만들기 위해 흩어진 마음의 별 조각들을 모으고 있어요.''';
+      case 9:
+        return '''고요한 어둠 속에서 가장 아름다운 밤하늘을 볼 수 있는 이곳은 어둠이 행성입니다. 이곳의 별들은 밤하늘에 커다란 그림을 그리는 '별자리 별'이었어요. 이 별자리들은 우주의 오래된 이야기를 들려주었죠. 별똥별이 별자리들을 흩어버린 후, 밤하늘의 위대한 이야기들도 모두 사라졌습니다. 신비로운 어둠이는 잊혀진 우주의 이야기를 되찾기 위해, 흩어진 별자리 조각들을 맞추려 합니다.''';
       default:
         return '''우주의 신비로운 모험이 당신을 기다리고 있습니다.
 

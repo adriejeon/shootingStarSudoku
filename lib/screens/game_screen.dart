@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
+import '../services/audio_service.dart';
 import 'stage_screen.dart';
 
 class GameScreen extends StatefulWidget {
@@ -91,14 +92,14 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _generate6x6Puzzle(int hintCount) {
-    // 6x6 완전한 스도쿠 솔루션 생성 (2x3 박스)
+    // 6x6 완전한 스도쿠 솔루션 생성 (2x2 박스)r
     List<List<int?>> solution = [
       [1, 2, 3, 4, 5, 6],
-      [4, 5, 6, 1, 2, 3],
-      [2, 3, 1, 5, 6, 4],
-      [5, 6, 4, 2, 3, 1],
-      [3, 1, 2, 6, 4, 5],
-      [6, 4, 5, 3, 1, 2],
+      [3, 4, 5, 6, 1, 2],
+      [5, 6, 1, 2, 3, 4],
+      [2, 1, 4, 3, 6, 5],
+      [4, 3, 6, 5, 2, 1],
+      [6, 5, 2, 1, 4, 3],
     ];
 
     _applyHints(solution, hintCount);
@@ -167,12 +168,12 @@ class _GameScreenState extends State<GameScreen> {
       // 3x3: 전체가 하나의 박스이므로 박스 검사 생략
       return true;
     } else if (_gridSize == 6) {
-      // 6x6: 2x3 박스
-      int boxRow = (row ~/ 2) * 2;
-      int boxCol = (col ~/ 3) * 3;
+      // 6x6: 3x3 박스 (가로 3줄, 세로 3줄씩 구분) - 각 박스는 2x2
+      int boxRow = (row ~/ 2) * 2; // 2줄씩 그룹화
+      int boxCol = (col ~/ 2) * 2; // 2줄씩 그룹화
 
       for (int i = boxRow; i < boxRow + 2; i++) {
-        for (int j = boxCol; j < boxCol + 3; j++) {
+        for (int j = boxCol; j < boxCol + 2; j++) {
           if ((i != row || j != col) && _grid[i][j] == number) {
             return false;
           }
@@ -224,6 +225,9 @@ class _GameScreenState extends State<GameScreen> {
           _selectedCol = -1;
         });
 
+        // 숫자 배치 효과음 재생
+        AudioService().playPopSound();
+
         if (_isGameComplete()) {
           _showGameCompleteDialog();
         }
@@ -241,6 +245,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _showGameCompleteDialog() {
+    // 성공 효과음 재생
+    AudioService().playSuccessSound();
+
     // 레벨 완료 처리
     final userProgress = Provider.of<UserProgressState>(context, listen: false);
     userProgress.completeLevel(
@@ -337,17 +344,17 @@ class _GameScreenState extends State<GameScreen> {
               // 상태 업데이트를 위해 잠시 대기
               await Future.delayed(const Duration(milliseconds: 100));
 
-               // 스테이지 화면 새로고침을 위해 Navigator.pushReplacement 사용
-               if (context.mounted) {
-                 Navigator.of(context).pushReplacement(
-                   MaterialPageRoute(
-                     builder: (context) => StageScreen(
-                       stageNumber: widget.stageNumber,
-                       skipAnimation: true, // 게임 완료 후 복귀 시 애니메이션 스킵
-                     ),
-                   ),
-                 );
-               }
+              // 스테이지 화면 새로고침을 위해 Navigator.pushReplacement 사용
+              if (context.mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => StageScreen(
+                      stageNumber: widget.stageNumber,
+                      skipAnimation: true, // 게임 완료 후 복귀 시 애니메이션 스킵
+                    ),
+                  ),
+                );
+              }
             },
             child: const Text('스테이지로', style: TextStyle(color: Colors.blue)),
           ),
@@ -644,8 +651,8 @@ class SudokuGridPainter extends CustomPainter {
       // 3x3: 전체가 하나의 박스이므로 박스 경계선 없음
       return;
     } else if (gridSize == 6) {
-      // 6x6: 2x3 박스
-      boxHeight = 2;
+      // 6x6: 3x3 박스 (가로 3줄, 세로 3줄씩 구분) - 각 박스는 2x2
+      boxHeight = 3;
       boxWidth = 3;
     } else {
       // 9x9: 3x3 박스

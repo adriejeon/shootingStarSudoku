@@ -19,10 +19,23 @@ class ProfileManagerState extends ChangeNotifier {
     _profiles = _dataService.getAllUserProfiles();
     print('ProfileManagerState: Loaded ${_profiles.length} profiles');
 
-    if (_profiles.isNotEmpty && _activeProfile == null) {
-      _activeProfile = _profiles.first;
-      print('ProfileManagerState: Set active profile: ${_activeProfile!.name}');
-    } else if (_profiles.isEmpty) {
+    if (_profiles.isNotEmpty) {
+      for (int i = 0; i < _profiles.length; i++) {
+        print(
+          'ProfileManagerState: Profile $i: ${_profiles[i].name}, completed levels: ${_profiles[i].completedLevels}',
+        );
+      }
+
+      if (_activeProfile == null) {
+        _activeProfile = _profiles.first;
+        print(
+          'ProfileManagerState: Set active profile: ${_activeProfile!.name}',
+        );
+        print(
+          'ProfileManagerState: Active profile completed levels: ${_activeProfile!.completedLevels}',
+        );
+      }
+    } else {
       print('ProfileManagerState: No profiles found');
     }
     notifyListeners();

@@ -65,7 +65,11 @@ class DataService {
       print('DataService not initialized, skipping saveUserProfile');
       return;
     }
+    print(
+      'DataService: Saving profile ${profile.name} with completed levels: ${profile.completedLevels}',
+    );
     await _userProfilesBox.put(profile.id, profile);
+    print('DataService: Profile saved successfully');
   }
 
   // 사용자 프로필 로드

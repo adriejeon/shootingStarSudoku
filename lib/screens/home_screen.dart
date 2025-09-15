@@ -4,6 +4,7 @@ import 'settings_screen.dart';
 import 'stage_screen.dart';
 import '../state/profile_manager_state.dart';
 import '../services/data_service.dart';
+import '../services/audio_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,14 +15,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _starController;
-  late AnimationController _titleController;
-  late Animation<double> _titleAnimation;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _loadData();
+    _startBackgroundMusic();
+  }
+
+  void _startBackgroundMusic() async {
+    await AudioService().playBackgroundMusic();
   }
 
   void _initializeAnimations() {
@@ -30,17 +34,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _titleController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _titleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _titleController, curve: Curves.elasticOut),
-    );
-
     _starController.repeat(reverse: true);
-    _titleController.forward();
   }
 
   Future<void> _loadData() async {
@@ -69,28 +63,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _starController.dispose();
-    _titleController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/bg-main.png'),
-            fit: BoxFit.cover,
+            image: const AssetImage('assets/images/bg-main.png'),
+            fit: isTablet ? BoxFit.fitWidth : BoxFit.cover,
             alignment: Alignment.center,
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
-              Expanded(child: _buildContent()),
+              _buildHeader(isTablet, screenSize),
+              _buildContent(isTablet, screenSize),
+              const Spacer(),
             ],
           ),
         ),
@@ -98,32 +95,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isTablet, Size screenSize) {
+    // 아이패드에서는 타이틀 크기와 위치 조절
+    final titleHeight = isTablet ? screenSize.height * 0.12 : 90.0;
+    final topPadding = isTablet ? screenSize.height * 0.15 : 160.0;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0),
-      child: AnimatedBuilder(
-        animation: _titleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _titleAnimation.value,
-            child: Image.asset(
-              'assets/images/main-title.png',
-              height: 80,
-              fit: BoxFit.contain,
-            ),
-          );
-        },
+      padding: EdgeInsets.only(top: topPadding, bottom: 4.0),
+      child: Image.asset(
+        'assets/images/main-title.png',
+        height: titleHeight,
+        fit: BoxFit.contain,
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(bool isTablet, Size screenSize) {
+    // 아이패드에서는 버튼 크기와 간격 조절
+    final playButtonHeight = isTablet ? screenSize.height * 0.08 : 70.0;
+    final settingButtonHeight = isTablet ? screenSize.height * 0.07 : 60.0;
+    final buttonSpacing = isTablet ? screenSize.height * 0.05 : 40.0;
+    final horizontalPadding = isTablet ? screenSize.width * 0.2 : 60.0;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 60.0),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(height: 40),
+          SizedBox(height: buttonSpacing),
           // 플레이 버튼
           GestureDetector(
             onTap: () {
@@ -134,11 +132,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
             child: Image.asset(
               'assets/images/btn-play.png',
-              height: 80,
+              height: playButtonHeight,
               fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: buttonSpacing),
           // 설정 버튼
           GestureDetector(
             onTap: () {
@@ -149,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
             child: Image.asset(
               'assets/images/btn-setting.png',
-              height: 60,
+              height: settingButtonHeight,
               fit: BoxFit.contain,
             ),
           ),

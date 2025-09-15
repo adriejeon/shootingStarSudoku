@@ -11,6 +11,7 @@ import 'models/user_profile.dart';
 import 'services/data_service.dart';
 import 'services/ad_service.dart'; // 더미 구현으로 활성화
 import 'services/analytics_service.dart';
+import 'services/audio_service.dart';
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,9 @@ Future<void> initializeApp() async {
 
   // 분석 서비스 초기화
   await AnalyticsService.instance.initialize();
+
+  // 오디오 서비스 초기화
+  await AudioService().initialize();
 }
 
 class ShootingStarSudokuApp extends StatelessWidget {

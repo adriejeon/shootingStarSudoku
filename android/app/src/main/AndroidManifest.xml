@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 오디오 권한 추가 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application
-        android:label="shooting_star_sudoku"
+        android:label="별똥별 스도쿠"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

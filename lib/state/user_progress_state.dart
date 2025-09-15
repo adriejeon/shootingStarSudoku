@@ -45,6 +45,12 @@ class UserProgressState extends ChangeNotifier {
         print(
           'UserProgressState: Active profile loaded: ${_currentProfile!.name}',
         );
+        print(
+          'UserProgressState: Profile completed levels: ${_currentProfile!.completedLevels}',
+        );
+        print(
+          'UserProgressState: Profile total stars: ${_currentProfile!.totalStars}',
+        );
         notifyListeners();
       } else {
         print('UserProgressState: No active profile found');
@@ -79,7 +85,12 @@ class UserProgressState extends ChangeNotifier {
   }
 
   // 퍼즐 완료 처리
-  void completePuzzle(int difficulty, int timeInSeconds) {
+  void completePuzzle(
+    int difficulty,
+    int timeInSeconds, {
+    int? stageNumber,
+    int? levelNumber,
+  }) {
     if (_currentProfile == null) return;
 
     final key = difficulty.toString();
@@ -109,11 +120,22 @@ class UserProgressState extends ChangeNotifier {
       starsEarned += 5; // 완벽한 시간 내 완료 시 보너스
     }
 
+    // 레벨 완료 상태도 함께 업데이트
+    Map<String, bool> newCompletedLevels = Map.from(
+      _currentProfile!.completedLevels,
+    );
+    if (stageNumber != null && levelNumber != null) {
+      String levelKey = '$stageNumber-$levelNumber';
+      newCompletedLevels[levelKey] = true;
+    }
+
     _currentProfile = _currentProfile!.copyWith(
       totalStars: _currentProfile!.totalStars + starsEarned,
       completedPuzzles: newCompletedPuzzles,
       bestTimes: newBestTimes,
       lastPlayedAt: DateTime.now(),
+      completedLevels: newCompletedLevels, // 업데이트된 완료 레벨
+      visitedStages: _currentProfile!.visitedStages, // 기존 방문 스테이지 보존
     );
 
     _dataService.saveUserProfile(_currentProfile!);
@@ -175,18 +197,17 @@ class UserProgressState extends ChangeNotifier {
 
     print('UserProgressState: Completing level $stageNumber-$levelNumber');
 
-    // 레벨 완료 상태 업데이트
-    _currentProfile = _currentProfile!.completeLevel(stageNumber, levelNumber);
+    // 퍼즐 완료 로직 실행 (별, 기록, 레벨 완료 상태 모두 처리) - 이 안에서 프로필 저장됨
+    completePuzzle(
+      difficulty,
+      timeInSeconds,
+      stageNumber: stageNumber,
+      levelNumber: levelNumber,
+    );
 
     print(
       'UserProgressState: Updated completed levels: ${_currentProfile!.completedLevels}',
     );
-
-    // 프로필 저장
-    _dataService.saveUserProfile(_currentProfile!);
-
-    // 기존 퍼즐 완료 로직도 실행 (별, 기록 등)
-    completePuzzle(difficulty, timeInSeconds);
 
     // 상태 변경 알림 - 여러 번 호출하여 확실하게 알림
     notifyListeners();
@@ -216,6 +237,27 @@ class UserProgressState extends ChangeNotifier {
     _currentProfile = _currentProfile!.visitStage(stageNumber);
     _dataService.saveUserProfile(_currentProfile!);
     notifyListeners();
+  }
+
+  // 스테이지 완료 상태 확인 (모든 레벨 완료 여부)
+  bool isStageCompleted(int stageNumber) {
+    if (_currentProfile == null) return false;
+
+    // 각 스테이지마다 20개의 레벨이 있다고 가정
+    for (int level = 1; level <= 20; level++) {
+      if (!isLevelCompleted(stageNumber, level)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // 스테이지 잠금 상태 확인
+  bool isStageLocked(int stageNumber) {
+    if (stageNumber == 1) return false; // 첫 번째 스테이지는 항상 열림
+
+    // 이전 스테이지가 완료되었는지 확인
+    return !isStageCompleted(stageNumber - 1);
   }
 
   // 프로필 초기화

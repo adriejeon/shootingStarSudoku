@@ -49,4 +49,10 @@ class AppConstants {
   static const String eventHintUsed = 'hint_used';
   // static const String eventCharacterUnlocked = 'character_unlocked'; // 캐릭터 기능 제거
   // static const String eventAdViewed = 'ad_viewed'; // 광고 비활성화
+
+  // 설정 키
+  static const String keyBackgroundMusicEnabled = 'background_music_enabled';
+  static const String keySoundEffectsEnabled = 'sound_effects_enabled';
+  static const String keyVibrationEnabled = 'vibration_enabled';
+  static const String keyNotificationsEnabled = 'notifications_enabled';
 }
