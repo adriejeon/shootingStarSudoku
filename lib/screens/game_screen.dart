@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
 import '../services/audio_service.dart';
-import 'stage_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final int difficulty;
@@ -205,12 +206,56 @@ class _GameScreenState extends State<GameScreen> {
     return true;
   }
 
+  bool _isGameFailed() {
+    // 모든 빈 셀에 대해 가능한 숫자가 있는지 확인
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_grid[i][j] == null && !_isOriginal[i][j]) {
+          // 이 셀에 넣을 수 있는 숫자가 있는지 확인
+          for (int num = 1; num <= _gridSize; num++) {
+            if (_isValidMove(i, j, num)) {
+              return false; // 가능한 움직임이 있으면 실패가 아님
+            }
+          }
+        }
+      }
+    }
+
+    // 빈 셀이 있지만 가능한 움직임이 없으면 실패
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_grid[i][j] == null) {
+          return true;
+        }
+      }
+    }
+
+    return false; // 게임이 완료되었거나 아직 진행 중
+  }
+
   void _onCellTap(int row, int col) {
     if (!_isOriginal[row][col]) {
       setState(() {
         _selectedRow = row;
         _selectedCol = col;
       });
+
+      // 셀 선택 시 진동 피드백
+      _triggerHapticFeedback();
+    }
+  }
+
+  Future<void> _triggerHapticFeedback() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final vibrationEnabled =
+          prefs.getBool(AppConstants.keyVibrationEnabled) ?? true;
+
+      if (vibrationEnabled) {
+        HapticFeedback.lightImpact();
+      }
+    } catch (e) {
+      print('햅틱 피드백 오류: $e');
     }
   }
 
@@ -228,8 +273,13 @@ class _GameScreenState extends State<GameScreen> {
         // 숫자 배치 효과음 재생
         AudioService().playPopSound();
 
+        // 진동 피드백 (설정이 켜져 있을 때만)
+        _triggerHapticFeedback();
+
         if (_isGameComplete()) {
           _showGameCompleteDialog();
+        } else if (_isGameFailed()) {
+          _showGameFailedDialog();
         }
       } else {
         // 잘못된 캐릭터 입력 시 피드백
@@ -240,13 +290,19 @@ class _GameScreenState extends State<GameScreen> {
             duration: const Duration(seconds: 1),
           ),
         );
+
+        // 잘못된 입력 시 진동 피드백
+        _triggerHapticFeedback();
       }
     }
   }
 
-  void _showGameCompleteDialog() {
+  void _showGameCompleteDialog() async {
     // 성공 효과음 재생
     AudioService().playSuccessSound();
+
+    // 게임 완료 시 진동 피드백
+    _triggerHapticFeedback();
 
     // 레벨 완료 처리
     final userProgress = Provider.of<UserProgressState>(context, listen: false);
@@ -256,6 +312,9 @@ class _GameScreenState extends State<GameScreen> {
       widget.difficulty,
       60,
     ); // 임시 시간
+
+    // 데이터 저장이 완료될 때까지 잠시 대기
+    await Future.delayed(const Duration(milliseconds: 200));
 
     showDialog(
       context: context,
@@ -329,34 +388,33 @@ class _GameScreenState extends State<GameScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // 다이얼로그 닫기
-              Navigator.of(context).popUntil((route) => route.isFirst); // 홈으로
-            },
-            child: const Text('홈으로', style: TextStyle(color: Colors.blue)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop(); // 다이얼로그 닫기
-              Navigator.of(context).pop(); // 게임 화면 닫기 (스테이지로 돌아가기)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
 
-              // 상태 업데이트를 위해 잠시 대기
-              await Future.delayed(const Duration(milliseconds: 100));
+                  // 상태 업데이트를 위해 잠시 대기
+                  await Future.delayed(const Duration(milliseconds: 100));
 
-              // 스테이지 화면 새로고침을 위해 Navigator.pushReplacement 사용
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => StageScreen(
-                      stageNumber: widget.stageNumber,
-                      skipAnimation: true, // 게임 완료 후 복귀 시 애니메이션 스킵
-                    ),
-                  ),
-                );
-              }
-            },
-            child: const Text('스테이지로', style: TextStyle(color: Colors.blue)),
+                  // 홈으로 이동
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('홈으로', style: TextStyle(color: Colors.blue)),
+              ),
+              const SizedBox(width: 20),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
+                  Navigator.of(context).pop(); // 게임 화면 닫기 (스테이지로 돌아가기)
+                },
+                child: const Text(
+                  '스테이지로',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -391,17 +449,10 @@ class _GameScreenState extends State<GameScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bg-game.png'),
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-        ),
+        decoration: const BoxDecoration(color: Color(0xFF10152C)),
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeader(),
               Expanded(child: _buildGameGrid()),
               _buildNumberPad(),
             ],
@@ -411,41 +462,17 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: const Text(
-            '캐릭터를 배치해보세요!',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildGameGrid() {
+    // 그리드 크기에 따른 패딩 조정
+    double padding = _gridSize == 3
+        ? 20.0
+        : _gridSize == 6
+        ? 10.0
+        : 5.0;
+
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding),
         child: AspectRatio(
           aspectRatio: 1,
           child: CustomPaint(
@@ -609,6 +636,94 @@ class _GameScreenState extends State<GameScreen> {
         ],
       ),
     );
+  }
+
+  void _showGameFailedDialog() async {
+    // 실패 시 진동 피드백
+    _triggerHapticFeedback();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(AppConstants.cardColor),
+        contentPadding: const EdgeInsets.all(20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 실패 아이콘
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.red, size: 50),
+            ),
+            const SizedBox(height: 20),
+            // 실패 메시지
+            const Text(
+              '게임 실패!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '더 이상 유효한 움직임이 없습니다.\n다시 시도해보세요!',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
+                  Navigator.of(context).pop(); // 게임 화면 닫기 (스테이지로 돌아가기)
+                },
+                child: const Text(
+                  '스테이지로',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+              const SizedBox(width: 20),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
+                  _resetGame(); // 게임 리셋
+                },
+                child: const Text(
+                  '다시 시도',
+                  style: TextStyle(color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetGame() {
+    setState(() {
+      // 그리드를 원래 상태로 리셋
+      for (int i = 0; i < _gridSize; i++) {
+        for (int j = 0; j < _gridSize; j++) {
+          if (!_isOriginal[i][j]) {
+            _grid[i][j] = null;
+          }
+        }
+      }
+      _selectedRow = -1;
+      _selectedCol = -1;
+    });
   }
 }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'screens/home_screen.dart';
@@ -10,20 +10,20 @@ import 'state/profile_manager_state.dart';
 import 'models/user_profile.dart';
 import 'services/data_service.dart';
 import 'services/ad_service.dart'; // 더미 구현으로 활성화
-import 'services/analytics_service.dart';
+// import 'services/analytics_service.dart';
 import 'services/audio_service.dart';
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase 초기화 (선택적)
-  try {
-    await Firebase.initializeApp();
-    print('Firebase initialized successfully');
-  } catch (e) {
-    print('Firebase initialization failed: $e');
-    print('Continuing without Firebase...');
-  }
+  // Firebase 초기화 (비활성화)
+  // try {
+  //   await Firebase.initializeApp();
+  //   print('Firebase initialized successfully');
+  // } catch (e) {
+  //   print('Firebase initialization failed: $e');
+  //   print('Continuing without Firebase...');
+  // }
 
   // Hive 초기화
   await Hive.initFlutter();
@@ -39,8 +39,8 @@ Future<void> initializeApp() async {
   // 광고 서비스 초기화 (더미 구현)
   await AdService.instance.initialize();
 
-  // 분석 서비스 초기화
-  await AnalyticsService.instance.initialize();
+  // 분석 서비스 초기화 (Firebase 비활성화로 인해 비활성화)
+  // await AnalyticsService.instance.initialize();
 
   // 오디오 서비스 초기화
   await AudioService().initialize();

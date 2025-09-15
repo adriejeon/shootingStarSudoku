@@ -189,7 +189,7 @@ class _StageScreenState extends State<StageScreen>
   }
 
   Widget _buildHeader(BuildContext context, bool isTablet, Size screenSize) {
-    final titleHeight = isTablet ? screenSize.height * 0.08 : 70.0;
+    final titleHeight = isTablet ? screenSize.height * 0.06 : 55.0;
     final iconSize = isTablet ? screenSize.width * 0.04 : 28.0;
     final padding = isTablet ? screenSize.width * 0.03 : 20.0;
 
