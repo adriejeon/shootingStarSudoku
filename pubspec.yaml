@@ -2,7 +2,7 @@ name: shooting_star_sudoku
 description: "별똥별 조각 찾기라는 컨셉으로 아이들이 재밌게 할만한 스도쿠 게임 앱"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -42,8 +42,8 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
-  # Advertising
-  google_mobile_ads: ^5.1.0
+  # Advertising (비활성화)
+  # google_mobile_ads: ^5.1.0
 
   # Analytics
   firebase_core: ^3.6.0
@@ -81,7 +81,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

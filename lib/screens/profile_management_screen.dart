@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import '../state/profile_manager_state.dart';
 import '../models/user_profile.dart';
 import '../utils/constants.dart';
-import '../utils/helpers.dart';
+// import '../utils/helpers.dart'; // 사용하지 않음
 
 class ProfileManagementScreen extends StatefulWidget {
   const ProfileManagementScreen({super.key});
 
   @override
-  State<ProfileManagementScreen> createState() => _ProfileManagementScreenState();
+  State<ProfileManagementScreen> createState() =>
+      _ProfileManagementScreenState();
 }
 
 class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
@@ -49,10 +50,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(AppConstants.backgroundColor),
-              Color(0xFF1E293B),
-            ],
+            colors: [Color(AppConstants.backgroundColor), Color(0xFF1E293B)],
           ),
         ),
         child: SafeArea(
@@ -106,10 +104,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
             ),
             child: const Text(
               '첫 프로필 만들기',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -145,11 +140,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   color: Colors.amber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                  size: 32,
-                ),
+                child: const Icon(Icons.star, color: Colors.amber, size: 32),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -177,7 +168,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -204,17 +198,22 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
         itemCount: profiles.length,
         itemBuilder: (context, index) {
           final profile = profiles[index];
-          final isActive = profile.id == context.read<ProfileManagerState>().activeProfile?.id;
-          
+          final isActive =
+              profile.id ==
+              context.read<ProfileManagerState>().activeProfile?.id;
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: isActive 
+              color: isActive
                   ? const Color(AppConstants.primaryColor).withOpacity(0.2)
                   : const Color(AppConstants.cardColor),
               borderRadius: BorderRadius.circular(12),
-              border: isActive 
-                  ? Border.all(color: const Color(AppConstants.primaryColor), width: 2)
+              border: isActive
+                  ? Border.all(
+                      color: const Color(AppConstants.primaryColor),
+                      width: 2,
+                    )
                   : null,
             ),
             child: ListTile(
@@ -225,11 +224,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   color: Colors.amber.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                  size: 20,
-                ),
+                child: const Icon(Icons.star, color: Colors.amber, size: 20),
               ),
               title: Text(
                 profile.name,
@@ -240,16 +235,16 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
               ),
               subtitle: Text(
                 '${profile.totalStars} 별',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
-                ),
+                style: TextStyle(color: Colors.white.withOpacity(0.7)),
               ),
               trailing: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (value) {
                   switch (value) {
                     case 'select':
-                      context.read<ProfileManagerState>().setActiveProfile(profile);
+                      context.read<ProfileManagerState>().setActiveProfile(
+                        profile,
+                      );
                       break;
                     case 'edit':
                       _showEditProfileDialog(profile);
@@ -260,18 +255,9 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'select',
-                    child: Text('선택'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Text('편집'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('삭제'),
-                  ),
+                  const PopupMenuItem(value: 'select', child: Text('선택')),
+                  const PopupMenuItem(value: 'edit', child: Text('편집')),
+                  const PopupMenuItem(value: 'delete', child: Text('삭제')),
                 ],
               ),
             ),
@@ -284,7 +270,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
   void _showCreateProfileDialog() {
     _nameController.clear();
     _selectedAvatar = 'star_1';
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -336,7 +322,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
 
   Widget _buildAvatarOption(String avatarId, IconData icon) {
     final isSelected = _selectedAvatar == avatarId;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -347,17 +333,22 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? const Color(AppConstants.primaryColor).withOpacity(0.3)
               : Colors.grey.withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
-          border: isSelected 
-              ? Border.all(color: const Color(AppConstants.primaryColor), width: 2)
+          border: isSelected
+              ? Border.all(
+                  color: const Color(AppConstants.primaryColor),
+                  width: 2,
+                )
               : null,
         ),
         child: Icon(
           icon,
-          color: isSelected ? const Color(AppConstants.primaryColor) : Colors.grey,
+          color: isSelected
+              ? const Color(AppConstants.primaryColor)
+              : Colors.grey,
         ),
       ),
     );
@@ -366,7 +357,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
   void _showEditProfileDialog(UserProfile profile) {
     _nameController.text = profile.name;
     _selectedAvatar = profile.avatar;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
