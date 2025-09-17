@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
 
@@ -52,6 +53,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       AppConstants.keyNotificationsEnabled,
       _notificationsEnabled,
     );
+  }
+
+  Future<void> _triggerHapticFeedback() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final vibrationEnabled =
+          prefs.getBool(AppConstants.keyVibrationEnabled) ?? true;
+
+      if (vibrationEnabled) {
+        // 안드로이드에서 더 강력한 진동을 위해 vibration 패키지 사용
+        if (await Vibration.hasVibrator() ?? false) {
+          await Vibration.vibrate(duration: 50);
+        } else {
+          // 폴백으로 HapticFeedback 사용
+          HapticFeedback.mediumImpact();
+        }
+      }
+    } catch (e) {
+      print('햅틱 피드백 오류: $e');
+      // 오류 발생 시 HapticFeedback으로 폴백
+      try {
+        HapticFeedback.mediumImpact();
+      } catch (fallbackError) {
+        print('폴백 햅틱 피드백도 실패: $fallbackError');
+      }
+    }
   }
 
   @override
@@ -110,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _saveSettings();
                         // 진동 효과가 켜져 있으면 토글 시 진동 발생
                         if (value) {
-                          HapticFeedback.mediumImpact();
+                          _triggerHapticFeedback();
                         }
                       },
                     ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/user_progress_state.dart';
 import '../utils/constants.dart';
+import '../widgets/story_bubble.dart';
+import '../models/story_data.dart';
 import 'game_screen.dart';
 
 class StageScreen extends StatefulWidget {
@@ -62,7 +64,6 @@ class _StageScreenState extends State<StageScreen>
   void _startInitialAnimation() async {
     // 애니메이션 스킵 플래그 확인
     if (widget.skipAnimation) {
-      print('StageScreen: Skipping animation (game completion return)');
       if (mounted) {
         setState(() {
           _animationCompleted = true;
@@ -74,22 +75,15 @@ class _StageScreenState extends State<StageScreen>
     // UserProgressState에서 최초 진입 여부 확인
     final userProgress = Provider.of<UserProgressState>(context, listen: false);
 
-    print('StageScreen: Starting animation check...');
-    print(
-      'StageScreen: UserProgressState profile: ${userProgress.currentProfile?.name ?? 'null'}',
-    );
-
     // 프로필이 없으면 잠시 대기 후 다시 시도 (최대 5번, 더 긴 대기시간)
     int retryCount = 0;
     while (userProgress.currentProfile == null && retryCount < 5) {
-      print('StageScreen: No profile found, waiting... (${retryCount + 1}/5)');
       await Future.delayed(const Duration(milliseconds: 1000));
       retryCount++;
     }
 
     // 최종 프로필 확인
     if (userProgress.currentProfile == null) {
-      print('StageScreen: No profile available, proceeding without profile');
       if (mounted) {
         setState(() {
           _animationCompleted = true;
@@ -98,13 +92,10 @@ class _StageScreenState extends State<StageScreen>
       return;
     }
 
-    print('StageScreen: Profile found: ${userProgress.currentProfile!.name}');
-
     final isFirstVisit = !userProgress.isStageVisited(widget.stageNumber);
 
     if (!isFirstVisit) {
       // 최초 진입이 아니면 애니메이션 없이 바로 완료 상태로
-      print('StageScreen: Not first visit, skipping animation');
       if (mounted) {
         setState(() {
           _animationCompleted = true;
@@ -114,9 +105,6 @@ class _StageScreenState extends State<StageScreen>
     }
 
     // 최초 진입이면 애니메이션 실행
-    print(
-      'StageScreen: First visit to stage ${widget.stageNumber}, starting animation',
-    );
 
     // 잠시 대기 후 애니메이션 시작
     await Future.delayed(const Duration(milliseconds: 500));
@@ -135,7 +123,6 @@ class _StageScreenState extends State<StageScreen>
 
         // 최초 방문 완료로 표시
         userProgress.visitStage(widget.stageNumber);
-        print('StageScreen: Animation completed, marked as visited');
       }
     }
   }
@@ -181,6 +168,8 @@ class _StageScreenState extends State<StageScreen>
                   child: _buildLevelsGrid(context, isTablet, screenSize),
                 ),
               ),
+              // 스토리 말풍선 (하단 고정)
+              _buildStorySection(context, isTablet, screenSize),
             ],
           ),
         ),
@@ -336,23 +325,17 @@ class _StageScreenState extends State<StageScreen>
     return Consumer<UserProgressState>(
       builder: (context, userProgress, child) {
         // 프로필이 없어도 기본 레벨 그리드 표시
-        print(
-          'StageScreen: Building levels grid, profile: ${userProgress.currentProfile?.name ?? 'null'}',
-        );
-
-        // 디버그용 로그 추가
-        print(
-          'StageScreen: Rebuilding levels grid for stage ${widget.stageNumber}',
-        );
-        print(
-          'Current completed levels: ${userProgress.currentProfile?.completedLevels}',
-        );
 
         final padding = isTablet ? screenSize.width * 0.08 : 20.0;
         final spacing = isTablet ? screenSize.height * 0.025 : 20.0;
 
         return Padding(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.fromLTRB(
+            padding,
+            padding * 0.3,
+            padding,
+            padding,
+          ),
           child: Column(
             children: [
               // 첫 번째 줄: 3x3 레벨 (1-4)
@@ -459,9 +442,6 @@ class _StageScreenState extends State<StageScreen>
   ) {
     bool isUnlocked = _isLevelUnlocked(userProgress, levelNumber);
     bool isCompleted = _isLevelCompleted(userProgress, levelNumber);
-
-    // 디버그 로그 추가
-    print('Level $levelNumber: unlocked=$isUnlocked, completed=$isCompleted');
 
     String finalImagePath;
     if (isCompleted) {
@@ -571,7 +551,6 @@ class _StageScreenState extends State<StageScreen>
       widget.stageNumber,
       levelNumber,
     );
-    print('Level ${widget.stageNumber}-$levelNumber completed: $completed');
     return completed;
   }
 
@@ -617,7 +596,7 @@ class _StageScreenState extends State<StageScreen>
                       storyTitle,
                       style: const TextStyle(
                         color: Colors.amber,
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -628,7 +607,7 @@ class _StageScreenState extends State<StageScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
               // 구분선
               Container(
@@ -643,7 +622,7 @@ class _StageScreenState extends State<StageScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
               // 스토리 내용
               Container(
@@ -719,5 +698,331 @@ class _StageScreenState extends State<StageScreen>
 
 당신의 지혜와 용기가 필요한 순간입니다.''';
     }
+  }
+
+  /// 스토리 섹션을 구축합니다 (하단 고정)
+  Widget _buildStorySection(
+    BuildContext context,
+    bool isTablet,
+    Size screenSize,
+  ) {
+    return Consumer<UserProgressState>(
+      builder: (context, userProgress, child) {
+        // 현재 스테이지에서 가장 최근에 완료된 레벨을 찾습니다
+        int latestCompletedLevel = _findLatestCompletedLevel(userProgress);
+
+        // 완료된 레벨이 없으면 기본 메시지를 표시합니다
+        if (latestCompletedLevel == 0) {
+          return _buildDefaultStoryBubble(context, isTablet, screenSize);
+        }
+
+        return StoryBubble(
+          stageNumber: widget.stageNumber,
+          levelNumber: latestCompletedLevel,
+          onTap: () => _showAllStories(context, userProgress),
+        );
+      },
+    );
+  }
+
+  /// 게임을 하나도 깨지 않은 상태의 기본 말풍선을 구축합니다
+  Widget _buildDefaultStoryBubble(
+    BuildContext context,
+    bool isTablet,
+    Size screenSize,
+  ) {
+    final characterName = StoryData.getCharacterName(widget.stageNumber);
+    final theme = StoryData.getStageTheme(widget.stageNumber);
+
+    return GestureDetector(
+      onTap: () => _showStoryModal(context),
+      child: Container(
+        margin: EdgeInsets.fromLTRB(
+          isTablet ? 40 : 20,
+          0,
+          isTablet ? 40 : 20,
+          isTablet ? 10 : 5,
+        ),
+        child: Stack(
+          children: [
+            // 말풍선 그림자
+            Positioned(
+              left: 4,
+              top: 4,
+              child: _buildDefaultBubbleShape(
+                characterName,
+                theme,
+                isTablet,
+                isShadow: true,
+              ),
+            ),
+            // 메인 말풍선
+            _buildDefaultBubbleShape(characterName, theme, isTablet),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 기본 말풍선 모양을 구축합니다
+  Widget _buildDefaultBubbleShape(
+    String characterName,
+    Map<String, dynamic> theme,
+    bool isTablet, {
+    bool isShadow = false,
+  }) {
+    return CustomPaint(
+      painter: BubblePainter(
+        color: isShadow
+            ? Colors.black.withOpacity(0.2)
+            : const Color(0xFF0E132A).withOpacity(0.6),
+        borderColor: isShadow
+            ? Colors.transparent
+            : Color(theme['accentColor']),
+        isShadow: isShadow,
+      ),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          isTablet ? 24 : 20,
+          isTablet ? 20 : 16,
+          isTablet ? 24 : 20,
+          isTablet ? 28 : 24,
+        ),
+        constraints: BoxConstraints(
+          minHeight: isTablet ? 80 : 60,
+          maxWidth: MediaQuery.of(context).size.width * (isTablet ? 0.9 : 0.95),
+        ),
+        child: isShadow
+            ? const SizedBox.shrink()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 캐릭터 이름
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color(theme['accentColor']).withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Color(theme['accentColor']).withOpacity(0.6),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          characterName,
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                offset: const Offset(1, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // 안내 메시지
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '도움말',
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // 기본 메시지
+                  Text(
+                    '어서 빛을 찾아주세요.',
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      height: 1.4,
+                      letterSpacing: 0.2,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(1, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  /// 현재 스테이지에서 가장 최근에 완료된 레벨을 찾습니다
+  int _findLatestCompletedLevel(UserProgressState userProgress) {
+    if (userProgress.currentProfile == null) return 0;
+
+    int latestLevel = 0;
+    for (int level = 1; level <= 20; level++) {
+      if (userProgress.isLevelCompleted(widget.stageNumber, level)) {
+        latestLevel = level;
+      } else {
+        break; // 순차적으로 완료되므로 미완료 레벨을 만나면 중단
+      }
+    }
+    return latestLevel;
+  }
+
+  /// 완료된 모든 스토리를 보여주는 모달을 표시합니다
+  void _showAllStories(BuildContext context, UserProgressState userProgress) {
+    final completedLevels = <int>[];
+
+    for (int level = 1; level <= 20; level++) {
+      if (userProgress.isLevelCompleted(widget.stageNumber, level)) {
+        completedLevels.add(level);
+      }
+    }
+
+    if (completedLevels.isEmpty) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 600),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1a1a2e),
+                const Color(0xFF16213e),
+                const Color(0xFF0f3460),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.amber.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 제목
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${StoryData.getCharacterName(widget.stageNumber)}의 모험 기록',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // 구분선
+              Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.amber.withOpacity(0.5),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              // 스토리 목록
+              Expanded(
+                child: ListView.builder(
+                  itemCount: completedLevels.length,
+                  itemBuilder: (context, index) {
+                    final level = completedLevels[index];
+                    final storyText = StoryData.getStoryText(
+                      widget.stageNumber,
+                      level,
+                    );
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Level $level',
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            storyText ?? '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

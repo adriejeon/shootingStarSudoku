@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
 import '../services/audio_service.dart';
+import '../widgets/stage_completion_dialog.dart';
 
 class GameScreen extends StatefulWidget {
   final int difficulty;
@@ -30,15 +33,30 @@ class _GameScreenState extends State<GameScreen> {
   int _selectedCol = -1;
   int _gridSize = 3;
 
+  // 타이머 관련 변수
+  Timer? _gameTimer;
+  int _elapsedSeconds = 0;
+
+  // 되돌리기 기능을 위한 변수
+  List<Map<String, dynamic>> _moveHistory = [];
+
+  // 지우기 기능을 위한 변수
+  bool _isEraseMode = false;
+
+  // 실수 카운팅 변수
+  int _mistakeCount = 0;
+  static const int _maxMistakes = 3;
+
   @override
   void initState() {
     super.initState();
     _initializeGame();
+    _startTimer();
   }
 
   void _initializeGame() {
     _gridSize = widget.difficulty == AppConstants.easyDifficulty
-        ? 3
+        ? 4
         : widget.difficulty == AppConstants.mediumDifficulty
         ? 6
         : 9;
@@ -49,6 +67,12 @@ class _GameScreenState extends State<GameScreen> {
       (_) => List.filled(_gridSize, false),
     );
 
+    // 게임 상태 초기화
+    _elapsedSeconds = 0;
+    _moveHistory.clear();
+    _mistakeCount = 0;
+    _isEraseMode = false;
+
     _generatePuzzle();
   }
 
@@ -56,8 +80,8 @@ class _GameScreenState extends State<GameScreen> {
     // 스테이지와 레벨에 따른 힌트 개수 계산
     int hintCount = _calculateHintCount();
 
-    if (_gridSize == 3) {
-      _generate3x3Puzzle(hintCount);
+    if (_gridSize == 4) {
+      _generate4x4Puzzle(hintCount);
     } else if (_gridSize == 6) {
       _generate6x6Puzzle(hintCount);
     } else {
@@ -81,26 +105,27 @@ class _GameScreenState extends State<GameScreen> {
     return hintCount.clamp(3, totalCells - 1); // 최소 3개, 최대 전체-1개
   }
 
-  void _generate3x3Puzzle(int hintCount) {
-    // 3x3 완전한 스도쿠 솔루션 생성
+  void _generate4x4Puzzle(int hintCount) {
+    // 4x4 완전한 스도쿠 솔루션 생성 (2x2 박스)
     List<List<int?>> solution = [
-      [1, 2, 3],
-      [2, 3, 1],
-      [3, 1, 2],
+      [1, 2, 3, 4],
+      [3, 4, 1, 2],
+      [2, 1, 4, 3],
+      [4, 3, 2, 1],
     ];
 
     _applyHints(solution, hintCount);
   }
 
   void _generate6x6Puzzle(int hintCount) {
-    // 6x6 완전한 스도쿠 솔루션 생성 (2x2 박스)r
+    // 6x6 완전한 스도쿠 솔루션 생성 (3x2 박스)
     List<List<int?>> solution = [
       [1, 2, 3, 4, 5, 6],
-      [3, 4, 5, 6, 1, 2],
-      [5, 6, 1, 2, 3, 4],
-      [2, 1, 4, 3, 6, 5],
-      [4, 3, 6, 5, 2, 1],
-      [6, 5, 2, 1, 4, 3],
+      [4, 5, 6, 1, 2, 3],
+      [2, 3, 1, 5, 6, 4],
+      [5, 6, 4, 2, 3, 1],
+      [3, 1, 2, 6, 4, 5],
+      [6, 4, 5, 3, 1, 2],
     ];
 
     _applyHints(solution, hintCount);
@@ -165,16 +190,25 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     // 박스 검사 (스도쿠 규칙에 따라)
-    if (_gridSize == 3) {
-      // 3x3: 전체가 하나의 박스이므로 박스 검사 생략
-      return true;
-    } else if (_gridSize == 6) {
-      // 6x6: 3x3 박스 (가로 3줄, 세로 3줄씩 구분) - 각 박스는 2x2
-      int boxRow = (row ~/ 2) * 2; // 2줄씩 그룹화
-      int boxCol = (col ~/ 2) * 2; // 2줄씩 그룹화
+    if (_gridSize == 4) {
+      // 4x4: 2x2 박스
+      int boxRow = (row ~/ 2) * 2;
+      int boxCol = (col ~/ 2) * 2;
 
       for (int i = boxRow; i < boxRow + 2; i++) {
         for (int j = boxCol; j < boxCol + 2; j++) {
+          if ((i != row || j != col) && _grid[i][j] == number) {
+            return false;
+          }
+        }
+      }
+    } else if (_gridSize == 6) {
+      // 6x6: 3x2 박스
+      int boxRow = (row ~/ 2) * 2; // 2줄씩 그룹화
+      int boxCol = (col ~/ 3) * 3; // 3줄씩 그룹화
+
+      for (int i = boxRow; i < boxRow + 2; i++) {
+        for (int j = boxCol; j < boxCol + 3; j++) {
           if ((i != row || j != col) && _grid[i][j] == number) {
             return false;
           }
@@ -197,6 +231,61 @@ class _GameScreenState extends State<GameScreen> {
     return true;
   }
 
+  bool _isInSameRowColOrBox(
+    int row,
+    int col,
+    int selectedRow,
+    int selectedCol,
+  ) {
+    if (selectedRow == -1 || selectedCol == -1) return false;
+
+    // 같은 행이나 열
+    if (row == selectedRow || col == selectedCol) return true;
+
+    // 같은 박스 검사
+    if (_gridSize == 4) {
+      // 4x4: 2x2 박스
+      int boxRow1 = (row ~/ 2) * 2;
+      int boxCol1 = (col ~/ 2) * 2;
+      int boxRow2 = (selectedRow ~/ 2) * 2;
+      int boxCol2 = (selectedCol ~/ 2) * 2;
+      return boxRow1 == boxRow2 && boxCol1 == boxCol2;
+    } else if (_gridSize == 6) {
+      // 6x6: 3x2 박스
+      int boxRow1 = (row ~/ 2) * 2;
+      int boxCol1 = (col ~/ 3) * 3;
+      int boxRow2 = (selectedRow ~/ 2) * 2;
+      int boxCol2 = (selectedCol ~/ 3) * 3;
+      return boxRow1 == boxRow2 && boxCol1 == boxCol2;
+    } else {
+      // 9x9: 3x3 박스
+      int boxRow1 = (row ~/ 3) * 3;
+      int boxCol1 = (col ~/ 3) * 3;
+      int boxRow2 = (selectedRow ~/ 3) * 3;
+      int boxCol2 = (selectedCol ~/ 3) * 3;
+      return boxRow1 == boxRow2 && boxCol1 == boxCol2;
+    }
+  }
+
+  void _startTimer() {
+    _gameTimer?.cancel();
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _elapsedSeconds++;
+      });
+    });
+  }
+
+  void _pauseTimer() {
+    _gameTimer?.cancel();
+  }
+
+  String _formatTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
   bool _isGameComplete() {
     for (int i = 0; i < _gridSize; i++) {
       for (int j = 0; j < _gridSize; j++) {
@@ -206,43 +295,25 @@ class _GameScreenState extends State<GameScreen> {
     return true;
   }
 
-  bool _isGameFailed() {
-    // 모든 빈 셀에 대해 가능한 숫자가 있는지 확인
-    for (int i = 0; i < _gridSize; i++) {
-      for (int j = 0; j < _gridSize; j++) {
-        if (_grid[i][j] == null && !_isOriginal[i][j]) {
-          // 이 셀에 넣을 수 있는 숫자가 있는지 확인
-          for (int num = 1; num <= _gridSize; num++) {
-            if (_isValidMove(i, j, num)) {
-              return false; // 가능한 움직임이 있으면 실패가 아님
-            }
-          }
-        }
-      }
-    }
-
-    // 빈 셀이 있지만 가능한 움직임이 없으면 실패
-    for (int i = 0; i < _gridSize; i++) {
-      for (int j = 0; j < _gridSize; j++) {
-        if (_grid[i][j] == null) {
-          return true;
-        }
-      }
-    }
-
-    return false; // 게임이 완료되었거나 아직 진행 중
-  }
-
   void _onCellTap(int row, int col) {
-    if (!_isOriginal[row][col]) {
-      setState(() {
-        _selectedRow = row;
-        _selectedCol = col;
-      });
-
-      // 셀 선택 시 진동 피드백
-      _triggerHapticFeedback();
+    // 원본 셀(고정된 셀)은 수정 불가
+    if (_isOriginal[row][col]) {
+      return;
     }
+
+    // 지우기 모드인 경우
+    if (_isEraseMode) {
+      _eraseCell(row, col);
+      return;
+    }
+
+    setState(() {
+      _selectedRow = row;
+      _selectedCol = col;
+    });
+
+    // 셀 선택 시 진동 피드백
+    _triggerHapticFeedback();
   }
 
   Future<void> _triggerHapticFeedback() async {
@@ -252,10 +323,21 @@ class _GameScreenState extends State<GameScreen> {
           prefs.getBool(AppConstants.keyVibrationEnabled) ?? true;
 
       if (vibrationEnabled) {
-        HapticFeedback.lightImpact();
+        // 안드로이드에서 더 강력한 진동을 위해 vibration 패키지 사용
+        if (await Vibration.hasVibrator() ?? false) {
+          await Vibration.vibrate(duration: 50);
+        } else {
+          // 폴백으로 HapticFeedback 사용
+          HapticFeedback.lightImpact();
+        }
       }
     } catch (e) {
-      print('햅틱 피드백 오류: $e');
+      // 오류 발생 시 HapticFeedback으로 폴백
+      try {
+        HapticFeedback.lightImpact();
+      } catch (fallbackError) {
+        // 폴백도 실패하면 조용히 처리
+      }
     }
   }
 
@@ -263,7 +345,37 @@ class _GameScreenState extends State<GameScreen> {
     if (_selectedRow != -1 &&
         _selectedCol != -1 &&
         !_isOriginal[_selectedRow][_selectedCol]) {
+      // 선택된 셀에 이미 같은 숫자가 있으면 제거
+      if (_grid[_selectedRow][_selectedCol] == number) {
+        // 되돌리기를 위한 이동 기록 저장
+        _moveHistory.add({
+          'row': _selectedRow,
+          'col': _selectedCol,
+          'previousValue': _grid[_selectedRow][_selectedCol],
+          'newValue': null,
+        });
+
+        setState(() {
+          _grid[_selectedRow][_selectedCol] = null;
+          _selectedRow = -1;
+          _selectedCol = -1;
+        });
+
+        // 숫자 제거 효과음 재생
+        AudioService().playPopSound();
+        _triggerHapticFeedback();
+        return;
+      }
+
       if (_isValidMove(_selectedRow, _selectedCol, number)) {
+        // 되돌리기를 위한 이동 기록 저장
+        _moveHistory.add({
+          'row': _selectedRow,
+          'col': _selectedCol,
+          'previousValue': _grid[_selectedRow][_selectedCol],
+          'newValue': number,
+        });
+
         setState(() {
           _grid[_selectedRow][_selectedCol] = number;
           _selectedRow = -1;
@@ -277,15 +389,28 @@ class _GameScreenState extends State<GameScreen> {
         _triggerHapticFeedback();
 
         if (_isGameComplete()) {
-          _showGameCompleteDialog();
-        } else if (_isGameFailed()) {
-          _showGameFailedDialog();
+          _pauseTimer();
+          _handleGameComplete();
         }
       } else {
+        // 실수 카운트 증가
+        setState(() {
+          _mistakeCount++;
+        });
+
+        // 실수 3번 시 게임 실패
+        if (_mistakeCount >= _maxMistakes) {
+          _pauseTimer();
+          _showGameFailedDialog();
+          return;
+        }
+
         // 잘못된 캐릭터 입력 시 피드백
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('이 위치에 해당 캐릭터를 넣을 수 없습니다'),
+            content: Text(
+              '실수 $_mistakeCount/$_maxMistakes - 이 위치에 해당 캐릭터를 넣을 수 없습니다',
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 1),
           ),
@@ -297,7 +422,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _showGameCompleteDialog() async {
+  void _handleGameComplete() async {
     // 성공 효과음 재생
     AudioService().playSuccessSound();
 
@@ -310,12 +435,35 @@ class _GameScreenState extends State<GameScreen> {
       widget.stageNumber,
       widget.levelNumber,
       widget.difficulty,
-      60,
-    ); // 임시 시간
+      _elapsedSeconds,
+    );
 
     // 데이터 저장이 완료될 때까지 잠시 대기
     await Future.delayed(const Duration(milliseconds: 200));
 
+    // 스테이지 완료 여부 확인
+    if (userProgress.isStageCompleted(widget.stageNumber)) {
+      _showStageCompletionDialog();
+    } else {
+      _showGameCompleteDialog();
+    }
+  }
+
+  void _showStageCompletionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StageCompletionDialog(
+        stageNumber: widget.stageNumber,
+        onComplete: () {
+          Navigator.of(context).pop(); // 다이얼로그 닫기
+          Navigator.of(context).popUntil((route) => route.isFirst); // 홈으로 이동
+        },
+      ),
+    );
+  }
+
+  void _showGameCompleteDialog() async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -381,7 +529,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              '스테이지 ${widget.stageNumber} - 레벨 ${widget.levelNumber} 완료!\n별똥별을 모두 찾았습니다!',
+              '${_getPlanetTitle(widget.stageNumber, widget.levelNumber)} 완료!\n조각을 모두 모았습니다!\n\n완료 시간: ${_formatTime(_elapsedSeconds)}',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
@@ -423,39 +571,62 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _gameTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('스테이지 ${widget.stageNumber} - 레벨 ${widget.levelNumber}'),
-        backgroundColor: const Color(AppConstants.backgroundColor),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {
-                _initializeGame();
-                _selectedRow = -1;
-                _selectedCol = -1;
-              });
-            },
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      onKeyEvent: (KeyEvent event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          if (_isEraseMode) {
+            setState(() {
+              _isEraseMode = false;
+              _selectedRow = -1;
+              _selectedCol = -1;
+            });
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _getPlanetTitle(widget.stageNumber, widget.levelNumber),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(color: Color(0xFF10152C)),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(child: _buildGameGrid()),
-              _buildNumberPad(),
-            ],
+          centerTitle: true,
+          backgroundColor: const Color(AppConstants.backgroundColor),
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                setState(() {
+                  _initializeGame();
+                  _selectedRow = -1;
+                  _selectedCol = -1;
+                  _startTimer();
+                });
+              },
+            ),
+          ],
+        ),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(color: Color(0xFF10152C)),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildGameInfo(),
+                Expanded(child: _buildGameGrid()),
+                _buildNumberPad(),
+              ],
+            ),
           ),
         ),
       ),
@@ -464,7 +635,7 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildGameGrid() {
     // 그리드 크기에 따른 패딩 조정
-    double padding = _gridSize == 3
+    double padding = _gridSize == 4
         ? 20.0
         : _gridSize == 6
         ? 10.0
@@ -489,6 +660,14 @@ class _GameScreenState extends State<GameScreen> {
                 int col = index % _gridSize;
                 bool isSelected = _selectedRow == row && _selectedCol == col;
                 bool isOriginal = _isOriginal[row][col];
+                bool isHighlighted =
+                    _isInSameRowColOrBox(
+                      row,
+                      col,
+                      _selectedRow,
+                      _selectedCol,
+                    ) &&
+                    !isSelected;
 
                 return GestureDetector(
                   onTap: () => _onCellTap(row, col),
@@ -497,15 +676,23 @@ class _GameScreenState extends State<GameScreen> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.cyan.withOpacity(0.4)
+                          : isHighlighted
+                          ? Colors.blue.withOpacity(0.15)
                           : isOriginal
                           ? Colors.white.withOpacity(0.15)
+                          : _isEraseMode && !isOriginal
+                          ? Colors.red.withOpacity(0.1)
                           : Colors.white.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isSelected
                             ? Colors.cyan.withOpacity(0.8)
+                            : isHighlighted
+                            ? Colors.blue.withOpacity(0.4)
+                            : _isEraseMode && !isOriginal
+                            ? Colors.red.withOpacity(0.5)
                             : Colors.white.withOpacity(0.2),
-                        width: isSelected ? 2 : 1,
+                        width: isSelected ? 2 : (isHighlighted ? 1.5 : 1),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -517,6 +704,12 @@ class _GameScreenState extends State<GameScreen> {
                           BoxShadow(
                             color: Colors.cyan.withOpacity(0.3),
                             blurRadius: 8,
+                            offset: const Offset(0, 0),
+                          )
+                        else if (isHighlighted)
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.2),
+                            blurRadius: 4,
                             offset: const Offset(0, 0),
                           ),
                       ],
@@ -555,26 +748,6 @@ class _GameScreenState extends State<GameScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: const Text(
-              '캐릭터를 선택하세요',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -586,6 +759,10 @@ class _GameScreenState extends State<GameScreen> {
             itemBuilder: (context, index) {
               int number = index + 1;
               bool isSelected = _selectedNumber == number;
+              bool isCurrentValue =
+                  _selectedRow != -1 &&
+                  _selectedCol != -1 &&
+                  _grid[_selectedRow][_selectedCol] == number;
 
               return GestureDetector(
                 onTap: () {
@@ -596,15 +773,19 @@ class _GameScreenState extends State<GameScreen> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected
+                    color: isCurrentValue
+                        ? Colors.orange.withOpacity(0.4)
+                        : isSelected
                         ? Colors.cyan.withOpacity(0.3)
                         : Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: isSelected
+                      color: isCurrentValue
+                          ? Colors.orange.withOpacity(0.8)
+                          : isSelected
                           ? Colors.cyan.withOpacity(0.8)
                           : Colors.white.withOpacity(0.3),
-                      width: isSelected ? 2 : 1,
+                      width: (isSelected || isCurrentValue) ? 2 : 1,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -612,7 +793,13 @@ class _GameScreenState extends State<GameScreen> {
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
-                      if (isSelected)
+                      if (isCurrentValue)
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 0),
+                        )
+                      else if (isSelected)
                         BoxShadow(
                           color: Colors.cyan.withOpacity(0.4),
                           blurRadius: 12,
@@ -672,9 +859,11 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              '더 이상 유효한 움직임이 없습니다.\n다시 시도해보세요!',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+            Text(
+              _mistakeCount >= _maxMistakes
+                  ? '실수를 $_maxMistakes번 하였습니다.\n다시 시도해보세요!'
+                  : '더 이상 유효한 움직임이 없습니다.\n다시 시도해보세요!',
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ],
@@ -698,10 +887,11 @@ class _GameScreenState extends State<GameScreen> {
                 onPressed: () {
                   Navigator.of(context).pop(); // 다이얼로그 닫기
                   _resetGame(); // 게임 리셋
+                  _startTimer(); // 타이머 재시작
                 },
                 child: const Text(
                   '다시 시도',
-                  style: TextStyle(color: Colors.green),
+                  style: TextStyle(color: Colors.blue),
                 ),
               ),
             ],
@@ -709,6 +899,48 @@ class _GameScreenState extends State<GameScreen> {
         ],
       ),
     );
+  }
+
+  void _undoLastMove() {
+    if (_moveHistory.isNotEmpty) {
+      final lastMove = _moveHistory.removeLast();
+      setState(() {
+        _grid[lastMove['row']][lastMove['col']] = lastMove['previousValue'];
+        _selectedRow = -1;
+        _selectedCol = -1;
+      });
+
+      // 되돌리기 효과음 재생
+      AudioService().playPopSound();
+      _triggerHapticFeedback();
+    }
+  }
+
+  void _toggleEraseMode() {
+    setState(() {
+      _isEraseMode = !_isEraseMode;
+      _selectedRow = -1;
+      _selectedCol = -1;
+    });
+
+    // 지우기 모드 진동 피드백
+    _triggerHapticFeedback();
+  }
+
+  void _eraseCell(int row, int col) {
+    // 원래 퍼즐의 칸이 아니고, 사용자가 입력한 칸만 지울 수 있음
+    if (!_isOriginal[row][col] && _grid[row][col] != null) {
+      setState(() {
+        _grid[row][col] = null;
+        _selectedRow = -1;
+        _selectedCol = -1;
+        _isEraseMode = false;
+      });
+
+      // 지우기 효과음 재생
+      AudioService().playPopSound();
+      _triggerHapticFeedback();
+    }
   }
 
   void _resetGame() {
@@ -723,7 +955,235 @@ class _GameScreenState extends State<GameScreen> {
       }
       _selectedRow = -1;
       _selectedCol = -1;
+      _elapsedSeconds = 0;
+      _moveHistory.clear();
+      _mistakeCount = 0;
     });
+  }
+
+  String _getPlanetTitle(int stageNumber, int levelNumber) {
+    switch (stageNumber) {
+      case 1:
+        return '빛의 조각 $levelNumber / 20';
+      case 2:
+        return '멜로디 조각 $levelNumber / 20';
+      case 3:
+        return '무지개 조각 $levelNumber / 20';
+      case 4:
+        return '탱탱볼 조각 $levelNumber / 20';
+      case 5:
+        return '지혜의 조각 $levelNumber / 20';
+      case 6:
+        return '생명의 조각 $levelNumber / 20';
+      case 7:
+        return '에너지 조각 $levelNumber / 20';
+      case 8:
+        return '온기의 조각 $levelNumber / 20';
+      case 9:
+        return '별자리 조각 $levelNumber / 20';
+      default:
+        return '수수께끼 조각 $levelNumber / 20';
+    }
+  }
+
+  Widget _buildGameInfo() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 화면 너비에 따라 레이아웃 결정 (더 작은 화면에서만 좁은 레이아웃 사용)
+        bool isNarrowScreen = constraints.maxWidth < 310;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          margin: const EdgeInsets.all(16),
+          child: isNarrowScreen ? _buildNarrowLayout() : _buildWideLayout(),
+        );
+      },
+    );
+  }
+
+  Widget _buildWideLayout() {
+    return Row(
+      children: [
+        // 시간 표시 (1/4)
+        Expanded(flex: 1, child: _buildTimeInfo()),
+        // 실수 표시 (1/4)
+        Expanded(flex: 1, child: _buildMistakeInfo()),
+        // 실행취소 버튼 (1/4)
+        Expanded(flex: 1, child: _buildUndoButton()),
+        const SizedBox(width: 8),
+        // 지우기 버튼 (1/4)
+        Expanded(flex: 1, child: _buildEraseButton()),
+      ],
+    );
+  }
+
+  Widget _buildNarrowLayout() {
+    return Column(
+      children: [
+        // 상단: 시간과 실수 정보
+        Row(
+          children: [
+            Expanded(flex: 1, child: _buildTimeInfo()),
+            Expanded(flex: 1, child: _buildMistakeInfo()),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // 하단: 버튼들
+        Row(
+          children: [
+            Expanded(flex: 1, child: _buildUndoButton()),
+            const SizedBox(width: 8),
+            Expanded(flex: 1, child: _buildEraseButton()),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeInfo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.access_time, size: 18, color: Colors.cyan),
+            const SizedBox(width: 6),
+            Text(
+              '시간',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _formatTime(_elapsedSeconds),
+          style: TextStyle(
+            color: Colors.cyan,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMistakeInfo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 18, color: Colors.red),
+            const SizedBox(width: 6),
+            Text(
+              '실수',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$_mistakeCount/$_maxMistakes',
+          style: TextStyle(
+            color: Colors.red,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUndoButton() {
+    return GestureDetector(
+      onTap: _moveHistory.isNotEmpty ? _undoLastMove : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _moveHistory.isNotEmpty
+              ? Colors.orange.withOpacity(0.2)
+              : Colors.grey.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _moveHistory.isNotEmpty
+                ? Colors.orange.withOpacity(0.5)
+                : Colors.grey.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.undo,
+              size: 16,
+              color: _moveHistory.isNotEmpty ? Colors.orange : Colors.grey,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '돌리기',
+              style: TextStyle(
+                color: _moveHistory.isNotEmpty ? Colors.orange : Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEraseButton() {
+    return GestureDetector(
+      onTap: _toggleEraseMode,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _isEraseMode
+              ? Colors.red.withOpacity(0.2)
+              : Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _isEraseMode
+                ? Colors.red.withOpacity(0.5)
+                : Colors.white.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_fix_high,
+              size: 16,
+              color: _isEraseMode ? Colors.red : Colors.white70,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '지우기',
+              style: TextStyle(
+                color: _isEraseMode ? Colors.red : Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -762,12 +1222,13 @@ class SudokuGridPainter extends CustomPainter {
     // 박스 경계선 그리기 (두꺼운 선)
     int boxHeight, boxWidth;
 
-    if (gridSize == 3) {
-      // 3x3: 전체가 하나의 박스이므로 박스 경계선 없음
-      return;
+    if (gridSize == 4) {
+      // 4x4: 2x2 박스
+      boxHeight = 2;
+      boxWidth = 2;
     } else if (gridSize == 6) {
-      // 6x6: 3x3 박스 (가로 3줄, 세로 3줄씩 구분) - 각 박스는 2x2
-      boxHeight = 3;
+      // 6x6: 3x2 박스
+      boxHeight = 2;
       boxWidth = 3;
     } else {
       // 9x9: 3x3 박스

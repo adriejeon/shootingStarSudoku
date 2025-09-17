@@ -65,7 +65,7 @@ class AudioService {
       try {
         await _backgroundPlayer.play(AssetSource('sounds/bg.mp3'));
       } catch (e) {
-        print('배경음악 재생 오류: $e');
+        // 배경음악 재생 실패 시 조용히 처리
       }
     }
   }
@@ -93,6 +93,10 @@ class AudioService {
 
   Future<void> playSuccessSound() async {
     await _playSound('sounds/success.mp3');
+  }
+
+  Future<void> playFinishSound() async {
+    await _playSound('sounds/finish.mp3');
   }
 
   // capybara_game 방식의 효과음 재생 메서드

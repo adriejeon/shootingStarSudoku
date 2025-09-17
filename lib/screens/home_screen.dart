@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import 'settings_screen.dart';
 import 'stage_screen.dart';
+import 'tutorial_screen.dart';
 import '../state/profile_manager_state.dart';
 import '../services/data_service.dart';
 import '../services/audio_service.dart';
@@ -42,14 +44,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _loadData() async {
-    print('HomeScreen: Starting data load...');
-
     // DataService 초기화 확인 (AppInitializer에서 이미 초기화됨)
     if (!DataService.instance.isInitialized) {
-      print('HomeScreen: DataService not initialized, initializing...');
       await DataService.instance.initialize();
     }
-    print('HomeScreen: DataService initialized');
 
     // 프로필 로드
     final profileManager = Provider.of<ProfileManagerState>(
@@ -57,11 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       listen: false,
     );
 
-    print('HomeScreen: Loading profiles...');
     await profileManager.loadProfiles();
-    print('HomeScreen: Loaded ${profileManager.profiles.length} profiles');
-
-    print('HomeScreen: Data load completed');
   }
 
   Future<void> _triggerHapticFeedback() async {
@@ -71,10 +65,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           prefs.getBool(AppConstants.keyVibrationEnabled) ?? true;
 
       if (vibrationEnabled) {
-        HapticFeedback.lightImpact();
+        // 안드로이드에서 더 강력한 진동을 위해 vibration 패키지 사용
+        if (await Vibration.hasVibrator() ?? false) {
+          await Vibration.vibrate(duration: 50);
+        } else {
+          // 폴백으로 HapticFeedback 사용
+          HapticFeedback.lightImpact();
+        }
       }
     } catch (e) {
-      print('햅틱 피드백 오류: $e');
+      // 오류 발생 시 HapticFeedback으로 폴백
+      try {
+        HapticFeedback.lightImpact();
+      } catch (fallbackError) {
+        // 폴백도 실패하면 조용히 처리
+      }
     }
   }
 
@@ -150,20 +155,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: buttonSpacing),
-          // 설정 버튼
-          GestureDetector(
-            onTap: () {
-              _triggerHapticFeedback();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-            child: Image.asset(
-              'assets/images/btn-setting.png',
-              height: settingButtonHeight,
-              fit: BoxFit.contain,
-            ),
+          // 튜토리얼 버튼과 설정 버튼
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 튜토리얼 버튼
+              GestureDetector(
+                onTap: () {
+                  _triggerHapticFeedback();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TutorialScreen(),
+                    ),
+                  );
+                },
+                child: Image.asset(
+                  'assets/images/btn-tutorial.png',
+                  height: settingButtonHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              SizedBox(width: isTablet ? 40 : 20),
+              // 설정 버튼
+              GestureDetector(
+                onTap: () {
+                  _triggerHapticFeedback();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+                child: Image.asset(
+                  'assets/images/btn-setting.png',
+                  height: settingButtonHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
           ),
           SizedBox(height: buttonSpacing),
           // 홈 이미지

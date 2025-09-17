@@ -70,6 +70,13 @@ class ShootingStarSudokuApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           fontFamily: 'NotoSansKR',
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          scaffoldBackgroundColor: const Color(0xFF10152C), // 앱의 기본 배경색
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
         ),
         home: AppInitializer(),
         debugShowCheckedModeBanner: false,

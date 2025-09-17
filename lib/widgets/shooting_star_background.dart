@@ -9,15 +9,15 @@ class ShootingStar {
   final Random random = Random();
 
   ShootingStar(Random randomGen, Size canvasSize) {
-    // 오른쪽 상단에서 시작
+    // 오른쪽 상단에서 시작 (화면 안쪽에서도 시작할 수 있도록)
     position = Offset(
-      canvasSize.width * 0.7 +
-          randomGen.nextDouble() * canvasSize.width * 0.3, // 오른쪽 30% 영역에서 시작
-      randomGen.nextDouble() * -canvasSize.height * 0.5, // 화면 밖 위에서 시작
+      canvasSize.width * 0.5 +
+          randomGen.nextDouble() * canvasSize.width * 0.5, // 오른쪽 50% 영역에서 시작
+      randomGen.nextDouble() * canvasSize.height * 0.2, // 화면 위쪽 20% 영역에서 시작
     );
-    speed = randomGen.nextDouble() * 2 + 1; // 1 ~ 3 사이의 속도
-    size = randomGen.nextDouble() * 40 + 30; // 30 ~ 70 사이의 크기
-    opacity = randomGen.nextDouble() * 0.5 + 0.5; // 0.5 ~ 1.0 사이의 투명도
+    speed = randomGen.nextDouble() * 4 + 2; // 3 ~ 7 사이의 속도 (더 빠르게)
+    size = randomGen.nextDouble() * 60 + 50; // 50 ~ 110 사이의 크기 (더 크게)
+    opacity = 1.0; // 완전히 불투명하게
   }
 
   void update(Size canvasSize) {
@@ -30,13 +30,13 @@ class ShootingStar {
     // 화면 밖으로 나가면 다시 초기화
     if (position.dy > canvasSize.height + size || position.dx < -size) {
       position = Offset(
-        canvasSize.width * 0.7 +
-            random.nextDouble() * canvasSize.width * 0.3, // 오른쪽 30% 영역에서 시작
-        random.nextDouble() * -canvasSize.height * 0.8, // 화면 밖 위에서 더 랜덤하게 시작
+        canvasSize.width * 0.5 +
+            random.nextDouble() * canvasSize.width * 0.4, // 오른쪽 50% 영역에서 시작
+        random.nextDouble() * canvasSize.height * 0.2, // 화면 위쪽 20% 영역에서 시작
       );
-      speed = random.nextDouble() * 2 + 1;
-      size = random.nextDouble() * 40 + 30;
-      opacity = random.nextDouble() * 0.5 + 0.5;
+      speed = random.nextDouble() * 3 + 2; // 3 ~ 7 사이의 속도 (더 빠르게)
+      size = random.nextDouble() * 60 + 50; // 50 ~ 110 사이의 크기 (더 크게)
+      opacity = 1.0; // 완전히 불투명하게
     }
   }
 }
@@ -66,7 +66,7 @@ class ShootingStarPainter extends CustomPainter {
 
       // 별똥별 이미지 그리기 (이미지가 로드되지 않은 경우를 대비해 원으로 대체)
       final Paint fallbackPaint = Paint()
-        ..color = Colors.white.withOpacity(star.opacity.clamp(0.0, 1.0))
+        ..color = Colors.yellow.withOpacity(star.opacity.clamp(0.0, 1.0))
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(star.position, imageSize / 2, fallbackPaint);
@@ -101,7 +101,7 @@ class _ShootingStarBackgroundState extends State<ShootingStarBackground>
     _stars = [];
     _controller =
         AnimationController(
-            duration: const Duration(milliseconds: 500), // 더 빠른 애니메이션으로 자주 떨어지게
+            duration: const Duration(milliseconds: 400), // 더 빠른 애니메이션으로 자주 떨어지게
             vsync: this,
           )
           ..addListener(() {
@@ -119,7 +119,10 @@ class _ShootingStarBackgroundState extends State<ShootingStarBackground>
     // 위젯이 빌드된 후 화면 크기를 가져와 별들을 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _initStars(MediaQuery.of(context).size);
+        final size = MediaQuery.of(context).size;
+        print('ShootingStarBackground: Canvas size: $size');
+        _initStars(size);
+        print('ShootingStarBackground: Initialized ${_stars.length} stars');
       }
     });
   }

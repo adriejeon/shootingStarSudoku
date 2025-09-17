@@ -14,7 +14,6 @@ class UserProgressState extends ChangeNotifier {
 
   // ProfileManagerState 설정
   void setProfileManager(ProfileManagerState profileManager) {
-    print('UserProgressState: Setting profile manager...');
     _profileManager = profileManager;
     _loadCurrentProfile();
 
@@ -24,42 +23,21 @@ class UserProgressState extends ChangeNotifier {
 
   // ProfileManagerState 변경사항 감지
   void _onProfileManagerChanged() {
-    print('UserProgressState: ProfileManager changed, reloading profile...');
     _loadCurrentProfile();
   }
 
   // 현재 프로필 로드
   void _loadCurrentProfile() {
-    print('UserProgressState: Loading current profile...');
     if (_profileManager != null) {
-      print('UserProgressState: ProfileManager found');
-      print(
-        'UserProgressState: ProfileManager profiles count: ${_profileManager!.profiles.length}',
-      );
-      print(
-        'UserProgressState: ProfileManager active profile: ${_profileManager!.activeProfile?.name ?? 'null'}',
-      );
-
       if (_profileManager!.activeProfile != null) {
         _currentProfile = _profileManager!.activeProfile;
-        print(
-          'UserProgressState: Active profile loaded: ${_currentProfile!.name}',
-        );
-        print(
-          'UserProgressState: Profile completed levels: ${_currentProfile!.completedLevels}',
-        );
-        print(
-          'UserProgressState: Profile total stars: ${_currentProfile!.totalStars}',
-        );
         notifyListeners();
       } else {
-        print('UserProgressState: No active profile found');
         // 프로필이 없으면 null로 설정하고 알림
         _currentProfile = null;
         notifyListeners();
       }
     } else {
-      print('UserProgressState: ProfileManager is null');
       _currentProfile = null;
       notifyListeners();
     }
@@ -167,7 +145,6 @@ class UserProgressState extends ChangeNotifier {
       stageNumber,
       levelNumber,
     );
-    print('Level $stageNumber-$levelNumber completed: $completed');
     return completed;
   }
 
@@ -178,24 +155,13 @@ class UserProgressState extends ChangeNotifier {
     int difficulty,
     int timeInSeconds,
   ) {
-    print(
-      'UserProgressState: Attempting to complete level $stageNumber-$levelNumber',
-    );
-    print(
-      'UserProgressState: Current profile: ${_currentProfile?.name ?? 'null'}',
-    );
-
     if (_currentProfile == null) {
-      print('UserProgressState: No profile found for level completion');
       // 프로필을 다시 로드 시도
       _loadCurrentProfile();
       if (_currentProfile == null) {
-        print('UserProgressState: Still no profile after reload attempt');
         return;
       }
     }
-
-    print('UserProgressState: Completing level $stageNumber-$levelNumber');
 
     // 퍼즐 완료 로직 실행 (별, 기록, 레벨 완료 상태 모두 처리) - 이 안에서 프로필 저장됨
     completePuzzle(
@@ -205,10 +171,6 @@ class UserProgressState extends ChangeNotifier {
       levelNumber: levelNumber,
     );
 
-    print(
-      'UserProgressState: Updated completed levels: ${_currentProfile!.completedLevels}',
-    );
-
     // 상태 변경 알림 - 여러 번 호출하여 확실하게 알림
     notifyListeners();
 
@@ -216,8 +178,6 @@ class UserProgressState extends ChangeNotifier {
     Future.delayed(const Duration(milliseconds: 50), () {
       notifyListeners();
     });
-
-    print('UserProgressState: Level completion process finished');
   }
 
   // 스테이지 방문 상태 확인
