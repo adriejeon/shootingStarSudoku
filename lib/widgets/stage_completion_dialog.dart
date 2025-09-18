@@ -253,6 +253,9 @@ class _StageCompletionDialogState extends State<StageCompletionDialog>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
+          // 상단 마진 추가
+          const SizedBox(height: 40),
+
           // 캐릭터 이름 표시
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -389,76 +392,32 @@ class _StageCompletionDialogState extends State<StageCompletionDialog>
           else
             const SizedBox(width: 48),
 
-          // 중앙 버튼 (다음/완료)
+          // 중앙 빈 공간 (다음 버튼 제거)
+
+          // 다음/완료 버튼
           GestureDetector(
             onTap: _currentPage < _storyPages.length - 1
                 ? _nextPage
                 : widget.onComplete,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(theme['primaryColor']),
-                    Color(theme['accentColor']),
-                  ],
-                ),
+                color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(theme['accentColor']).withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _currentPage < _storyPages.length - 1 ? '다음' : '완료',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    _currentPage < _storyPages.length - 1
-                        ? Icons.arrow_forward
-                        : Icons.check,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ],
+              child: Icon(
+                _currentPage < _storyPages.length - 1
+                    ? Icons.arrow_forward
+                    : Icons.check,
+                color: Colors.white,
+                size: 24,
               ),
             ),
           ),
-
-          // 다음 버튼 (빈 공간)
-          if (_currentPage < _storyPages.length - 1)
-            GestureDetector(
-              onTap: _nextPage,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            )
-          else
-            const SizedBox(width: 48),
         ],
       ),
     );

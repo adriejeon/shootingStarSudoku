@@ -91,16 +91,27 @@ class _GameScreenState extends State<GameScreen> {
 
   int _calculateHintCount() {
     // 스테이지 1 레벨 1: 최대 힌트 (80%)
-    // 스테이지 9 레벨 20: 최소 힌트 (30%)
+    // 스테이지 6 레벨 20: 힌트 (50%) - 기존 난이도 유지
+    // 스테이지 9 레벨 20: 힌트 (35%) - 고급 수준으로 조정
     int totalCells = _gridSize * _gridSize;
     int stage = widget.stageNumber;
     int level = widget.levelNumber;
 
-    // 난이도 계산: 스테이지와 레벨에 따라 힌트 개수 조절
-    double difficulty =
-        ((stage - 1) * 20 + (level - 1)) / (9 * 20 - 1); // 0.0 ~ 1.0
-    int hintCount = (totalCells * (0.8 - difficulty * 0.5))
-        .round(); // 80% ~ 30%
+    // 난이도 계산: 스테이지에 따라 다른 난이도 곡선 적용
+    double difficulty;
+    int hintCount;
+
+    if (stage <= 6) {
+      // 스테이지 1~6: 기존 난이도 유지 (80% ~ 50%)
+      difficulty = ((stage - 1) * 20 + (level - 1)) / (6 * 20 - 1); // 0.0 ~ 1.0
+      hintCount = (totalCells * (0.8 - difficulty * 0.3)).round(); // 80% ~ 50%
+    } else {
+      // 스테이지 7~9: 조정된 난이도 (50% ~ 35%)
+      double stage7to9Difficulty =
+          ((stage - 7) * 20 + (level - 1)) / (3 * 20 - 1); // 0.0 ~ 1.0
+      hintCount = (totalCells * (0.5 - stage7to9Difficulty * 0.15))
+          .round(); // 50% ~ 35%
+    }
 
     return hintCount.clamp(3, totalCells - 1); // 최소 3개, 최대 전체-1개
   }
@@ -324,7 +335,7 @@ class _GameScreenState extends State<GameScreen> {
 
       if (vibrationEnabled) {
         // 안드로이드에서 더 강력한 진동을 위해 vibration 패키지 사용
-        if (await Vibration.hasVibrator() ?? false) {
+        if (await Vibration.hasVibrator() == true) {
           await Vibration.vibrate(duration: 50);
         } else {
           // 폴백으로 HapticFeedback 사용
