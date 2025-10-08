@@ -12,6 +12,7 @@ import 'services/data_service.dart';
 import 'services/ad_service.dart'; // 더미 구현으로 활성화
 // import 'services/analytics_service.dart';
 import 'services/audio_service.dart';
+import 'ads/admob_handler.dart';
 
 Future<void> initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,8 @@ Future<void> initializeApp() async {
 
   // 광고 서비스 초기화 (더미 구현)
   await AdService.instance.initialize();
+
+  // AdMob은 main.dart에서 이미 초기화됨
 
   // 분석 서비스 초기화 (Firebase 비활성화로 인해 비활성화)
   // await AnalyticsService.instance.initialize();

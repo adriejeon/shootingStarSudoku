@@ -8,6 +8,10 @@ import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
 import '../services/audio_service.dart';
 import '../widgets/stage_completion_dialog.dart';
+import '../models/game_save_state.dart';
+import '../ads/admob_handler.dart';
+import '../services/daily_game_service.dart';
+import 'dart:convert';
 
 class GameScreen extends StatefulWidget {
   final int difficulty;
@@ -52,28 +56,40 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     _initializeGame();
     _startTimer();
+    // 게임 상태 확인은 완전히 제거하고 항상 새로 시작
   }
 
   void _initializeGame() {
-    _gridSize = widget.difficulty == AppConstants.easyDifficulty
-        ? 4
-        : widget.difficulty == AppConstants.mediumDifficulty
-        ? 6
-        : 9;
+    print('게임 초기화 시작 - 완전히 새로 시작');
 
-    _grid = List.generate(_gridSize, (_) => List.filled(_gridSize, null));
-    _isOriginal = List.generate(
-      _gridSize,
-      (_) => List.filled(_gridSize, false),
-    );
+    setState(() {
+      _gridSize = widget.difficulty == AppConstants.easyDifficulty
+          ? 4
+          : widget.difficulty == AppConstants.mediumDifficulty
+          ? 6
+          : 9;
 
-    // 게임 상태 초기화
-    _elapsedSeconds = 0;
-    _moveHistory.clear();
-    _mistakeCount = 0;
-    _isEraseMode = false;
+      // 그리드 완전히 새로 생성
+      _grid = List.generate(_gridSize, (_) => List.filled(_gridSize, null));
+      _isOriginal = List.generate(
+        _gridSize,
+        (_) => List.filled(_gridSize, false),
+      );
 
+      // 모든 게임 상태 완전 초기화
+      _elapsedSeconds = 0;
+      _moveHistory.clear();
+      _mistakeCount = 0;
+      _isEraseMode = false;
+      _selectedRow = -1;
+      _selectedCol = -1;
+      _selectedNumber = 1;
+    });
+
+    // 퍼즐 새로 생성
     _generatePuzzle();
+
+    print('게임 초기화 완료 - 실수: $_mistakeCount/$_maxMistakes');
   }
 
   void _generatePuzzle() {
@@ -352,7 +368,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _onNumberSelect(int number) {
+  Future<void> _onNumberSelect(int number) async {
     if (_selectedRow != -1 &&
         _selectedCol != -1 &&
         !_isOriginal[_selectedRow][_selectedCol]) {
@@ -412,6 +428,7 @@ class _GameScreenState extends State<GameScreen> {
         // 실수 3번 시 게임 실패
         if (_mistakeCount >= _maxMistakes) {
           _pauseTimer();
+          await _saveGameState(); // 게임 상태 저장
           _showGameFailedDialog();
           return;
         }
@@ -439,6 +456,9 @@ class _GameScreenState extends State<GameScreen> {
 
     // 게임 완료 시 진동 피드백
     _triggerHapticFeedback();
+
+    // 저장된 게임 상태 삭제
+    await _clearSavedGame();
 
     // 레벨 완료 처리
     final userProgress = Provider.of<UserProgressState>(context, listen: false);
@@ -615,13 +635,8 @@ class _GameScreenState extends State<GameScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () {
-                setState(() {
-                  _initializeGame();
-                  _selectedRow = -1;
-                  _selectedCol = -1;
-                  _startTimer();
-                });
+              onPressed: () async {
+                await _handleResetGame();
               },
             ),
           ],
@@ -895,13 +910,26 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(width: 20),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop(); // 다이얼로그 닫기
-                  _resetGame(); // 게임 리셋
-                  _startTimer(); // 타이머 재시작
+
+                  // 전면 광고 표시
+                  final adHandler = AdmobHandler();
+
+                  // 광고가 준비되지 않았으면 먼저 로드
+                  if (!adHandler.isInterstitialAdLoaded) {
+                    print('전면 광고 로드 중...');
+                    await adHandler.loadInterstitialAd();
+                  }
+
+                  await adHandler.showInterstitialAd();
+
+                  // 광고를 본 후 게임 상태 복원 (실수 카운트는 0으로 초기화)
+                  _loadSavedGameWithResetMistakes();
+                  _startTimer();
                 },
                 child: const Text(
-                  '다시 시도',
+                  '이어서 하기',
                   style: TextStyle(color: Colors.blue),
                 ),
               ),
@@ -954,22 +982,238 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _resetGame() {
-    setState(() {
-      // 그리드를 원래 상태로 리셋
-      for (int i = 0; i < _gridSize; i++) {
-        for (int j = 0; j < _gridSize; j++) {
-          if (!_isOriginal[i][j]) {
-            _grid[i][j] = null;
-          }
+  // 게임 상태 저장
+  Future<void> _saveGameState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final gameState = GameSaveState(
+        grid: _grid
+            .map((row) => row.map((cell) => cell ?? 0).toList())
+            .toList(),
+        mistakeCount: _mistakeCount,
+        elapsedSeconds: _elapsedSeconds,
+        stageNumber: widget.stageNumber,
+        levelNumber: widget.levelNumber,
+        difficulty: _getDifficultyString(),
+        saveTime: DateTime.now(),
+      );
+
+      final gameStateJson = jsonEncode(gameState.toJson());
+      await prefs.setString('saved_game_state', gameStateJson);
+      print('게임 상태 저장 완료');
+    } catch (e) {
+      print('게임 상태 저장 실패: $e');
+    }
+  }
+
+  // 게임 상태 확인 및 복원
+  Future<void> _checkAndLoadSavedGame() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedGameJson = prefs.getString('saved_game_state');
+
+      if (savedGameJson != null) {
+        final gameStateMap = jsonDecode(savedGameJson);
+        final gameState = GameSaveState.fromJson(gameStateMap);
+
+        // 현재 게임과 저장된 게임이 같은지 확인
+        if (gameState.stageNumber == widget.stageNumber &&
+            gameState.levelNumber == widget.levelNumber &&
+            gameState.difficulty == _getDifficultyString()) {
+          // 같은 게임인 경우에만 상태 복원
+          print('같은 게임 감지 - 상태 복원');
+          setState(() {
+            _grid = gameState.grid
+                .map(
+                  (row) => row.map((cell) => cell == 0 ? null : cell).toList(),
+                )
+                .toList();
+            _mistakeCount = gameState.mistakeCount;
+            _elapsedSeconds = gameState.elapsedSeconds;
+          });
+        } else {
+          // 다른 게임인 경우 저장된 상태 삭제
+          print('다른 게임 감지 - 저장된 상태 삭제');
+          await _clearSavedGame();
         }
       }
+
+      // 게임 상태가 깨끗한지 최종 확인
+      _ensureGameStateIsClean();
+    } catch (e) {
+      print('게임 상태 확인 실패: $e');
+      // 오류 발생 시 게임을 새로 초기화
+      _resetGameState();
+    }
+  }
+
+  // 게임 상태 복원
+  Future<void> _loadSavedGame() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedGameJson = prefs.getString('saved_game_state');
+
+      if (savedGameJson != null) {
+        final gameStateMap = jsonDecode(savedGameJson);
+        final gameState = GameSaveState.fromJson(gameStateMap);
+
+        // 현재 게임과 저장된 게임이 같은지 확인
+        if (gameState.stageNumber == widget.stageNumber &&
+            gameState.levelNumber == widget.levelNumber &&
+            gameState.difficulty == _getDifficultyString()) {
+          setState(() {
+            _grid = gameState.grid
+                .map(
+                  (row) => row.map((cell) => cell == 0 ? null : cell).toList(),
+                )
+                .toList();
+            _mistakeCount = gameState.mistakeCount;
+            _elapsedSeconds = gameState.elapsedSeconds;
+          });
+
+          print('게임 상태 복원 완료');
+        } else {
+          // 다른 게임인 경우 저장된 상태 삭제
+          print('다른 게임 시작 - 저장된 게임 상태 삭제');
+          await _clearSavedGame();
+        }
+      }
+    } catch (e) {
+      print('게임 상태 복원 실패: $e');
+    }
+  }
+
+  // 게임 상태 복원 (실수 카운트 초기화)
+  Future<void> _loadSavedGameWithResetMistakes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedGameJson = prefs.getString('saved_game_state');
+
+      if (savedGameJson != null) {
+        final gameStateMap = jsonDecode(savedGameJson);
+        final gameState = GameSaveState.fromJson(gameStateMap);
+
+        // 현재 게임과 저장된 게임이 같은지 확인
+        if (gameState.stageNumber == widget.stageNumber &&
+            gameState.levelNumber == widget.levelNumber &&
+            gameState.difficulty == _getDifficultyString()) {
+          setState(() {
+            _grid = gameState.grid
+                .map(
+                  (row) => row.map((cell) => cell == 0 ? null : cell).toList(),
+                )
+                .toList();
+            _mistakeCount = 0; // 실수 카운트를 0으로 초기화
+            _elapsedSeconds = gameState.elapsedSeconds;
+          });
+
+          print('게임 상태 복원 완료 (실수 카운트 초기화)');
+        } else {
+          // 다른 게임인 경우 저장된 상태 삭제
+          print('다른 게임 시작 - 저장된 게임 상태 삭제');
+          await _clearSavedGame();
+        }
+      }
+    } catch (e) {
+      print('게임 상태 복원 실패: $e');
+    }
+  }
+
+  // 게임 상태 삭제
+  Future<void> _clearSavedGame() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('saved_game_state');
+      print('저장된 게임 상태 삭제 완료');
+    } catch (e) {
+      print('게임 상태 삭제 실패: $e');
+    }
+  }
+
+  // 난이도 문자열 반환
+  String _getDifficultyString() {
+    if (widget.difficulty == AppConstants.easyDifficulty) return 'easy';
+    if (widget.difficulty == AppConstants.mediumDifficulty) return 'medium';
+    return 'hard';
+  }
+
+  // 게임 상태가 깨끗한지 확인하고 필요시 초기화
+  void _ensureGameStateIsClean() {
+    bool needsReset = false;
+
+    // 실수 카운트가 최대값을 초과하거나 비정상적인 상태인 경우
+    if (_mistakeCount > _maxMistakes || _mistakeCount < 0) {
+      print('비정상적인 실수 카운트 감지: $_mistakeCount');
+      needsReset = true;
+    }
+
+    // 그리드가 비정상적인 상태인지 확인
+    for (int i = 0; i < _gridSize; i++) {
+      for (int j = 0; j < _gridSize; j++) {
+        if (_grid[i][j] != null &&
+            (_grid[i][j]! < 1 || _grid[i][j]! > _gridSize)) {
+          print('비정상적인 그리드 값 감지: ${_grid[i][j]} at ($i, $j)');
+          needsReset = true;
+          break;
+        }
+      }
+      if (needsReset) break;
+    }
+
+    // 게임이 이미 완료된 상태인지 확인
+    if (_isGameComplete()) {
+      print('게임이 이미 완료된 상태 감지');
+      needsReset = true;
+    }
+
+    if (needsReset) {
+      print('게임 상태 초기화 실행');
+      _resetGameState();
+    } else {
+      print('게임 상태 정상 - 실수: $_mistakeCount/$_maxMistakes');
+    }
+  }
+
+  // 게임 상태 완전 초기화
+  void _resetGameState() {
+    setState(() {
+      _mistakeCount = 0;
+      _elapsedSeconds = 0;
       _selectedRow = -1;
       _selectedCol = -1;
-      _elapsedSeconds = 0;
+      _selectedNumber = 1;
+      _isEraseMode = false;
       _moveHistory.clear();
-      _mistakeCount = 0;
+
+      // 그리드 완전 재생성
+      _grid = List.generate(_gridSize, (_) => List.filled(_gridSize, null));
+      _isOriginal = List.generate(
+        _gridSize,
+        (_) => List.filled(_gridSize, false),
+      );
     });
+
+    // 퍼즐 재생성
+    _generatePuzzle();
+    print('게임 상태 완전 초기화 완료');
+  }
+
+  // 게임 리셋 처리 (일일 게임 카운팅 없음)
+  Future<void> _handleResetGame() async {
+    // 게임 리셋은 일일 카운팅에 포함되지 않음
+    _resetGame();
+  }
+
+  // 게임 리셋
+  void _resetGame() {
+    if (mounted) {
+      setState(() {
+        _initializeGame();
+        _selectedRow = -1;
+        _selectedCol = -1;
+        _startTimer();
+      });
+    }
   }
 
   String _getPlanetTitle(int stageNumber, int levelNumber) {

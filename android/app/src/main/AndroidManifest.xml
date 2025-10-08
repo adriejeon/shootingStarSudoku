@@ -30,6 +30,20 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9203710218960521~6469283650"/>
+        <!-- 가족 친화적 광고 설정 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.TAG_FOR_CHILD_DIRECTED_TREATMENT"
+            android:value="true"/>
+        <meta-data
+            android:name="com.google.android.gms.ads.TAG_FOR_UNDER_AGE_OF_CONSENT"
+            android:value="true"/>
+        <meta-data
+            android:name="com.google.android.gms.ads.MAX_AD_CONTENT_RATING"
+            android:value="G"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

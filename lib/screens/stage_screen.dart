@@ -4,6 +4,8 @@ import '../state/user_progress_state.dart';
 import '../utils/constants.dart';
 import '../widgets/story_bubble.dart';
 import '../models/story_data.dart';
+import '../services/daily_game_service.dart';
+import '../ads/admob_handler.dart';
 import 'game_screen.dart';
 
 class StageScreen extends StatefulWidget {
@@ -138,6 +140,66 @@ class _StageScreenState extends State<StageScreen>
     });
   }
 
+  // 게임 시작 처리 (일일 게임 카운팅 포함)
+  Future<void> _handleGameStart(int difficulty, int levelNumber) async {
+    try {
+      // 디버그 정보 출력
+      await DailyGameService.debugCurrentState();
+
+      // 현재 게임 횟수 확인
+      final currentCount = await DailyGameService.getTodayGameCount();
+      print('현재 게임 횟수: $currentCount');
+
+      // 게임 횟수 증가
+      await DailyGameService.incrementGameCount();
+
+      // 증가된 횟수로 광고 여부 확인
+      final newCount = currentCount + 1;
+      final shouldShowAd = newCount >= 2; // 3번째부터 (0, 1, 2...)
+
+      if (shouldShowAd) {
+        // 3번째 게임부터 광고 표시
+        print('일일 게임 광고 표시 - ${newCount + 1}번째 게임');
+        final adHandler = AdmobHandler();
+
+        // 광고가 준비되지 않았으면 먼저 로드
+        if (!adHandler.isInterstitialAdLoaded) {
+          print('일일 게임 광고 로드 중...');
+          await adHandler.loadInterstitialAd();
+        }
+
+        await adHandler.showInterstitialAd();
+
+        // 광고를 본 후 게임 화면으로 이동
+        _navigateToGame(difficulty, levelNumber);
+      } else {
+        // 1-2번째 게임은 광고 없이 바로 이동
+        print('무료 게임 - 광고 없이 진행');
+        _navigateToGame(difficulty, levelNumber);
+      }
+    } catch (e) {
+      print('게임 시작 오류: $e');
+      // 오류 발생 시에도 게임 화면으로 이동
+      _navigateToGame(difficulty, levelNumber);
+    }
+  }
+
+  // 게임 화면으로 이동
+  void _navigateToGame(int difficulty, int levelNumber) {
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => GameScreen(
+            difficulty: difficulty,
+            stageNumber: widget.stageNumber,
+            levelNumber: levelNumber,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
@@ -178,22 +240,46 @@ class _StageScreenState extends State<StageScreen>
   }
 
   Widget _buildHeader(BuildContext context, bool isTablet, Size screenSize) {
-    final titleHeight = isTablet ? screenSize.height * 0.06 : 55.0;
-    final iconSize = isTablet ? screenSize.width * 0.04 : 28.0;
+    final titleHeight = isTablet ? screenSize.height * 0.05 : 50.0; // 타이틀 크기 증가
+    final iconSize = isTablet ? screenSize.width * 0.03 : 24.0; // 아이콘 크기 줄임
+    final buttonSize = isTablet ? screenSize.width * 0.06 : 40.0; // 버튼 크기 줄임
     final padding = isTablet ? screenSize.width * 0.03 : 20.0;
 
     return Padding(
       padding: EdgeInsets.all(padding),
       child: Row(
         children: [
-          // 타이틀 이미지 (왼쪽 정렬, 크기 증가)
+          // 홈 버튼 (왼쪽) - 주석처리
+          // GestureDetector(
+          //   onTap: () {
+          //     Navigator.pushAndRemoveUntil(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const HomeScreen()),
+          //       (route) => false,
+          //     );
+          //   },
+          //   child: Container(
+          //     width: 35,
+          //     height: 35,
+          //     decoration: BoxDecoration(
+          //       color: Colors.black.withOpacity(0.3),
+          //       borderRadius: BorderRadius.circular(8),
+          //       border: Border.all(
+          //         color: Colors.white.withOpacity(0.2),
+          //         width: 1,
+          //       ),
+          //     ),
+          //     child: Icon(Icons.home, color: Colors.white, size: 20),
+          //   ),
+          // ),
+          // 타이틀 이미지 (왼쪽 정렬)
           Image.asset(
             'assets/images/title${widget.stageNumber}.png',
             height: titleHeight,
             fit: BoxFit.contain,
           ),
           const Spacer(),
-          // 스토리 모달 버튼
+          // 스토리 모달 버튼 (오른쪽)
           Container(
             decoration: BoxDecoration(
               color: Colors.amber.withOpacity(0.2),
@@ -210,15 +296,19 @@ class _StageScreenState extends State<StageScreen>
                 ),
               ],
             ),
-            child: IconButton(
-              onPressed: () => _showStoryModal(context),
-              icon: Image.asset(
-                'assets/images/icon-info.png',
-                width: iconSize,
-                height: iconSize,
-                fit: BoxFit.contain,
+            child: SizedBox(
+              width: buttonSize,
+              height: buttonSize,
+              child: IconButton(
+                onPressed: () => _showStoryModal(context),
+                icon: Image.asset(
+                  'assets/images/icon-info.png',
+                  width: iconSize,
+                  height: iconSize,
+                  fit: BoxFit.contain,
+                ),
+                tooltip: '행성 스토리',
               ),
-              tooltip: '행성 스토리',
             ),
           ),
         ],
@@ -245,11 +335,29 @@ class _StageScreenState extends State<StageScreen>
               if (widget.stageNumber > 1) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => StageScreen(
-                      stageNumber: widget.stageNumber - 1,
-                      skipAnimation: true,
-                    ),
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        StageScreen(
+                          stageNumber: widget.stageNumber - 1,
+                          skipAnimation: true,
+                        ),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          // 이전 스테이지로 이동: 왼쪽에서 오른쪽으로 슬라이드
+                          const begin = Offset(-1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOut;
+                          var tween = Tween(
+                            begin: begin,
+                            end: end,
+                          ).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          return SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          );
+                        },
+                    transitionDuration: const Duration(milliseconds: 300),
                   ),
                 );
               } else {
@@ -281,11 +389,29 @@ class _StageScreenState extends State<StageScreen>
                 ? () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => StageScreen(
-                          stageNumber: widget.stageNumber + 1,
-                          skipAnimation: true,
-                        ),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            StageScreen(
+                              stageNumber: widget.stageNumber + 1,
+                              skipAnimation: true,
+                            ),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              // 다음 스테이지로 이동: 오른쪽에서 왼쪽으로 슬라이드
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.easeInOut;
+                              var tween = Tween(
+                                begin: begin,
+                                end: end,
+                              ).chain(CurveTween(curve: curve));
+                              var offsetAnimation = animation.drive(tween);
+                              return SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              );
+                            },
+                        transitionDuration: const Duration(milliseconds: 300),
                       ),
                     );
                   }
@@ -454,17 +580,8 @@ class _StageScreenState extends State<StageScreen>
 
     return GestureDetector(
       onTap: isUnlocked
-          ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GameScreen(
-                    difficulty: difficulty,
-                    stageNumber: widget.stageNumber,
-                    levelNumber: levelNumber,
-                  ),
-                ),
-              );
+          ? () async {
+              await _handleGameStart(difficulty, levelNumber);
             }
           : null,
       child: Container(
