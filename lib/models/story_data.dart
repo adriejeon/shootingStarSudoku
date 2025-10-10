@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 class StoryData {
   static const Map<int, Map<int, String>> stageStories = {
     1: {
@@ -210,8 +212,230 @@ class StoryData {
   };
 
   /// 특정 스테이지와 레벨에 해당하는 스토리 텍스트를 반환합니다.
-  static String? getStoryText(int stageNumber, int levelNumber) {
+  static String? getStoryText(
+    int stageNumber,
+    int levelNumber, [
+    AppLocalizations? localizations,
+  ]) {
+    if (localizations != null && localizations.localeName == 'en') {
+      return _getEnglishStoryText(stageNumber, levelNumber);
+    }
     return stageStories[stageNumber]?[levelNumber];
+  }
+
+  /// 영어 스토리 텍스트를 반환합니다.
+  static String? _getEnglishStoryText(int stageNumber, int levelNumber) {
+    const Map<int, Map<int, String>> englishStageStories = {
+      1: {
+        // Stage 1: Sparkle Planet (Journey to Restore Light)
+        1: 'Found the first star fragment!',
+        2: 'Another fragment found. The pieces glow as they connect.',
+        3: 'Sparkle found the next piece with your help.',
+        4: 'The area grows brighter as pieces gather.',
+        5: 'Great! Five pieces collected. A small constellation forms!',
+        6: 'Sparkle found a fragment in a deep cave.',
+        7: 'The light grows stronger. No flashlight needed!',
+        8: 'The star pieces twinkle like a gentle song.',
+        9: 'Sparkle thanks you with sparkling dust.',
+        10: 'Wow! Half the star is complete! The night brightens.',
+        11: 'The remaining pieces are nearby. Almost there!',
+        12: 'Found the largest fragment! Much brighter now.',
+        13: 'Sparkle found the way home and is happy.',
+        14: 'Planet shadows grow shorter.',
+        15: 'Dazzling light begins to surround the planet.',
+        16: 'Hidden flowers bloom in the new light.',
+        17: 'Three more pieces! Sparkle\'s eyes shine with hope.',
+        18: 'Two pieces left. The star\'s shape emerges!',
+        19: 'The final piece calls from afar!',
+        20: 'Success! Sparkle Planet\'s beautiful light is restored!',
+      },
+      2: {
+        // Stage 2: Bubble Planet (Awakening Melody)
+        1: 'Found the first bubble piece. It makes a \'Do\' sound.',
+        2: 'Second piece attached. Now it plays \'Re\' and creates harmony.',
+        3: 'Bubble dances joyfully to the rhythm.',
+        4: 'The still ocean ripples to the music.',
+        5: 'A short melody plays! Fish gather to listen.',
+        6: 'More pieces make it sound like real music.',
+        7: 'Bubble hums and shows you the next piece.',
+        8: 'Clear sounds spread across the planet.',
+        9: 'Seaweed dances to the melody.',
+        10: 'Half the bubble is complete! Silence breaks.',
+        11: 'Found the high note fragment!',
+        12: 'A rainbow appears above the water.',
+        13: 'Bubble says your skills are like beautiful music.',
+        14: 'Found the bass fragment. Richer melody!',
+        15: 'All life sings along with the music.',
+        16: 'Beautiful music fills every corner.',
+        17: 'Just the final climax remains!',
+        18: 'The bubble glows with brilliant light and sound.',
+        19: 'The last piece completes the harmony!',
+        20: 'Success! Bubble Planet\'s melody plays again!',
+      },
+      3: {
+        // Stage 3: Cloud Planet (Dream of Reclaiming Rainbow)
+        1: 'Found a red fragment in gray clouds.',
+        2: 'Orange piece attached. Cloud turns sunset-colored.',
+        3: 'Cloud dreams of the next piece location.',
+        4: 'Yellow piece found. Warm sunlight feeling.',
+        5: 'Half the rainbow colors gathered! Small arch forms!',
+        6: 'Green piece found. Sprouts emerge from clouds.',
+        7: 'Cloud makes cotton candy for you.',
+        8: 'Blue piece clears part of the gray sky.',
+        9: 'Indigo piece matches the deep night sky.',
+        10: 'Half the cotton candy star gathered! Rainbow rises!',
+        11: 'Purple piece holds dawn cloud colors.',
+        12: 'All colors gathered! Rainbow grows clearer.',
+        13: 'Cloud brightens. Sweet dreams coming!',
+        14: 'Gray sky becomes fluffy white clouds.',
+        15: 'Rainbow mist brings pleasant sleep.',
+        16: 'The star is so beautiful Cloud can\'t stop staring.',
+        17: 'Clouds are now fluffy, not damp.',
+        18: 'Almost done! Sky looks like pastel art.',
+        19: 'One last piece completes the scene!',
+        20: 'Success! Colorful rainbow blooms on Cloud Planet!',
+      },
+      4: {
+        // Stage 4: Little Jelly Planet (Jump to Restore Festival)
+        1: 'Detached first fragment from floor. Bounciness returns!',
+        2: 'Second piece attached. It tries to bounce with a \'pop!\'',
+        3: 'Little Jelly cheers and clears sticky obstacles.',
+        4: 'Floor stickiness fades as elasticity returns.',
+        5: 'Five pieces gathered! Bounces like a rubber ball!',
+        6: 'Jelly floor regains elasticity. Walking is easier.',
+        7: 'Little Jelly bounces excitedly in place.',
+        8: 'Star pieces bounce and spread sweet fruit energy.',
+        9: 'Jelly trees sway to the rhythm.',
+        10: 'Half the bouncy star complete! Planet becomes a trampoline!',
+        11: 'Each piece lets you jump higher.',
+        12: 'Found the most elastic center piece! Sky-high jumps!',
+        13: 'Little Jelly shows amazing aerial tricks.',
+        14: 'Stopped jelly fountain gushes again.',
+        15: 'All jellies jump together in festival joy.',
+        16: 'Everywhere feels light and exciting to walk!',
+        17: 'Almost done! Bouncy star energy reaches space!',
+        18: 'Star energy peaks. Rainbow jelly rain falls.',
+        19: 'The last piece floats high in the sky!',
+        20: 'Success! Little Jelly Planet\'s festival begins! Everyone jump!',
+      },
+      5: {
+        // Stage 5: Smart Planet (Exploration to Restore Knowledge)
+        1: 'First piece placed. \'Birth of the Universe\' appears.',
+        2: 'Second piece found. Ancient planet map completed.',
+        3: 'Smart admires your logic skills and gives hints.',
+        4: 'Scattered books find their places.',
+        5: 'Great inventor\'s blueprints completed!',
+        6: 'Crystal forest glows with ancient knowledge.',
+        7: 'Smart creates a new invention as a gift.',
+        8: 'History, science, and art knowledge organized.',
+        9: 'Jumbled language fixed. Communication restored.',
+        10: 'Half the wisdom star complete! Great library emerges!',
+        11: 'Found the lost prophecy book part.',
+        12: 'Discovered the core knowledge piece.',
+        13: 'Smart solves an unsolvable cosmic mystery.',
+        14: 'Library books glow golden with wisdom.',
+        15: 'All knowledge organized for easy access.',
+        16: 'Wisdom starlight clears your mind.',
+        17: 'Three more pieces! Cosmic secrets revealed.',
+        18: 'Almost there. Knowledge light illuminates universe.',
+        19: 'The last piece connects all knowledge!',
+        20: 'Success! Smart Planet\'s great library restored!',
+      },
+      6: {
+        // Stage 6: Forest Keeper Planet (Breath to Revive Life)
+        1: 'First piece found. Withered grass comes back to life.',
+        2: 'Two pieces gathered. Small sprout emerges.',
+        3: 'Forest Keeper and animal friends show the next piece.',
+        4: 'Warmth spreads. Withered leaves regain vitality.',
+        5: 'Five pieces gathered! Bright flower blooms!',
+        6: 'Clear water flows in the dried stream again.',
+        7: 'Forest Keeper gives you a revived fruit.',
+        8: 'Life starlight awakens sleeping creatures.',
+        9: 'Butterflies and bees return to the forest.',
+        10: 'Half the life star gathered! Green energy swirls!',
+        11: 'Life-giving rain moistens the dry land.',
+        12: 'Found the forest heart - the largest life piece!',
+        13: 'Forest Keeper smiles brightly for the first time.',
+        14: 'Green leaves grow lush on bare branches.',
+        15: 'Forest fills with joyful animal songs.',
+        16: 'Fireflies light the night celebrating the forest.',
+        17: 'Three more pieces! Giant life tree revives soon.',
+        18: 'Star energy overflows. Clean oxygen fills forest.',
+        19: 'The last piece shines at the tallest tree top!',
+        20: 'Success! Forest Keeper Planet\'s life is revived!',
+      },
+      7: {
+        // Stage 7: Little Lightning Planet (Spark to Awaken Energy)
+        1: 'First piece found. Static electricity \'zap!\' at fingertips.',
+        2: 'Two pieces combined. Small spark \'crack!\' in darkness.',
+        3: 'Little Lightning flies quickly to guide you.',
+        4: 'Machines start working as pieces gather.',
+        5: 'Five pieces gathered! Can brighten a light bulb!',
+        6: 'Stopped windmills turn with energy wind.',
+        7: 'Little Lightning creates lightning cloud tricks.',
+        8: 'Lights turn on in dark cities one by one.',
+        9: 'Weak electric current flows with pleasant vibration.',
+        10: 'Half the energy star gathered! Lightning strikes!',
+        11: 'Can move a small robot with gathered energy.',
+        12: 'Found the core piece with most powerful energy!',
+        13: 'Little Lightning loves your brilliant puzzle skills.',
+        14: 'Dark clouds prepare magnificent lightning.',
+        15: 'Planet overflows with powerful energy and vitality.',
+        16: 'Night sky isn\'t boring. Lightning keeps striking.',
+        17: 'Three more pieces! Legendary lightning show coming!',
+        18: 'Powerful sparks cover the sky before completion.',
+        19: 'The last piece! It\'s in the magnetic storm center!',
+        20: 'Success! Little Lightning Planet\'s show begins! Amazing sky!',
+      },
+      8: {
+        // Stage 8: Warm Planet (Heart that Transmits Warmth)
+        1: 'Cold first piece warms with your body heat.',
+        2: 'Two pieces attached. Faint warmth melts cold air.',
+        3: 'Warm is moved by your kindness and whispers the next piece.',
+        4: 'Frozen rivers melt as pieces gather.',
+        5: 'Five pieces gathered! Warms like a small stove.',
+        6: 'Planet inhabitants open hearts and talk.',
+        7: 'Warm knits you a cozy sweater gift.',
+        8: 'Heart star warmth melts frozen hearts.',
+        9: 'Lonely animals approach and lean together.',
+        10: 'Half the heart star gathered! Cozy energy swirls!',
+        11: 'Planet\'s winter ends. Warm spring comes.',
+        12: 'Found the warmest center piece with love.',
+        13: 'Warm believes everyone can be happy again.',
+        14: 'Warm laughter blooms in every house.',
+        15: 'Everyone naturally hugs and shares warmth.',
+        16: 'Night starlight feels warm, not cold.',
+        17: 'Three more pieces! Great love warmth coming!',
+        18: 'Star almost complete. Peaceful light shines.',
+        19: 'The last piece! Where warm hearts gather!',
+        20: 'Success! Love and warmth bloom on Warm Planet!',
+      },
+      9: {
+        // Stage 9: Dark Planet (Constellation that Completes Stories)
+        1: 'First piece placed. Draco constellation tail drawn.',
+        2: 'Second piece found. Legendary hero\'s shield revealed.',
+        3: 'Mysterious Dark hints at the next piece location.',
+        4: 'Stars connect and form faint constellations.',
+        5: 'Five pieces complete Ursa Minor! Guide for travelers.',
+        6: 'Stories appear in night sky. Imagination develops.',
+        7: 'Dark tells an old story about the constellation.',
+        8: 'Beautiful constellations like Cygnus, Aquila float.',
+        9: 'Night is no longer quiet with constellation stories.',
+        10: 'Half the constellation star complete! Sky unfolds like storybook.',
+        11: 'Found Orion\'s lost belt with sad love story.',
+        12: 'Found brightest North Star piece for sky center.',
+        13: 'Dark recovers forgotten cosmic history.',
+        14: 'Constellations move and perform a play.',
+        15: 'Children create new stories from constellations.',
+        16: 'Night sky becomes library of cosmic mystery.',
+        17: 'Three more pieces! Greatest universe epic coming!',
+        18: 'Stars almost gathered. Sky looks like giant artwork.',
+        19: 'The last piece! Period to all stories!',
+        20: 'Success! Great cosmic story restored in Dark Planet\'s sky!',
+      },
+    };
+
+    return englishStageStories[stageNumber]?[levelNumber];
   }
 
   /// 특정 스테이지의 모든 스토리를 반환합니다.
@@ -220,7 +444,36 @@ class StoryData {
   }
 
   /// 스테이지별 캐릭터 이름을 반환합니다.
-  static String getCharacterName(int stageNumber) {
+  static String getCharacterName(
+    int stageNumber, [
+    AppLocalizations? localizations,
+  ]) {
+    if (localizations != null) {
+      switch (stageNumber) {
+        case 1:
+          return localizations.character1;
+        case 2:
+          return localizations.character2;
+        case 3:
+          return localizations.character3;
+        case 4:
+          return localizations.character4;
+        case 5:
+          return localizations.character5;
+        case 6:
+          return localizations.character6;
+        case 7:
+          return localizations.character7;
+        case 8:
+          return localizations.character8;
+        case 9:
+          return localizations.character9;
+        default:
+          return localizations.characterDefault;
+      }
+    }
+
+    // 기본 한국어 이름 (localizations가 없을 때)
     switch (stageNumber) {
       case 1:
         return '반짝이';
@@ -246,7 +499,13 @@ class StoryData {
   }
 
   /// 스테이지 완료 시 표시할 스토리를 반환합니다.
-  static List<String> getStageCompletionStory(int stageNumber) {
+  static List<String> getStageCompletionStory(
+    int stageNumber, [
+    AppLocalizations? localizations,
+  ]) {
+    if (localizations != null && localizations.localeName == 'en') {
+      return _getEnglishStageCompletionStory(stageNumber);
+    }
     switch (stageNumber) {
       case 1:
         return [
@@ -307,6 +566,72 @@ class StoryData {
           '축하합니다! 당신의 놀라운 지혜 덕분에 별 조각의 마지막 조각을 찾아냈어요!',
           '흩어졌던 별 조각들이 마침내 하나로 모이며 찬란한 빛을 되찾았어요!',
           '이제 행성은 더 이상 슬프지 않아요. 모두가 당신의 용기와 끈기에 감동하며 환호하고 있답니다!',
+        ];
+    }
+  }
+
+  /// 영어 스테이지 완료 스토리를 반환합니다.
+  static List<String> _getEnglishStageCompletionStory(int stageNumber) {
+    switch (stageNumber) {
+      case 1:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Sparkle** found the last piece of the **Light Fragment**!',
+          'The scattered **Light Fragments** have finally come together and regained their brilliant light! The **Sparkle Planet**, once shrouded in darkness, is now filled with **sparkling light** again!',
+          'Now the **Sparkle Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 2:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Bubble** found the last piece of the **Melody Fragment**!',
+          'The scattered **Melody Fragments** have finally come together and regained their brilliant light! The **Bubble Planet**, once shrouded in silence, is now filled with **beautiful melodies** again!',
+          'Now the **Bubble Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 3:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Cloudy** found the last piece of the **Rainbow Fragment**!',
+          'The scattered **Rainbow Fragments** have finally come together and regained their brilliant light! The **Cloudy Planet**, once shrouded in gray, is now filled with **colorful rainbows** again!',
+          'Now the **Cloudy Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 4:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Little Jelly** found the last piece of the **Bouncy Fragment**!',
+          'The scattered **Bouncy Fragments** have finally come together and regained their brilliant light! The **Little Jelly Planet**, once shrouded in stickiness, is now filled with **exciting bounciness** again!',
+          'Now the **Little Jelly Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 5:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Smartie** found the last piece of the **Wisdom Fragment**!',
+          'The scattered **Wisdom Fragments** have finally come together and regained their brilliant light! The **Smartie Planet**, once shrouded in chaos, is now filled with **great knowledge** again!',
+          'Now the **Smartie Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 6:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Forest Keeper** found the last piece of the **Life Fragment**!',
+          'The scattered **Life Fragments** have finally come together and regained their brilliant light! The **Forest Keeper Planet**, once shrouded in barrenness, is now filled with **fresh vitality** again!',
+          'Now the **Forest Keeper Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 7:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Little Lightning** found the last piece of the **Energy Fragment**!',
+          'The scattered **Energy Fragments** have finally come together and regained their brilliant light! The **Little Lightning Planet**, once shrouded in silence, is now filled with **thrilling energy** again!',
+          'Now the **Little Lightning Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 8:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Warmie** found the last piece of the **Warmth Fragment**!',
+          'The scattered **Warmth Fragments** have finally come together and regained their brilliant light! The **Warmie Planet**, once shrouded in coldness, is now filled with **cozy warmth** again!',
+          'Now the **Warmie Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! The next planet awaits your touch!',
+        ];
+      case 9:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, **Darkie** found the last piece of the **Constellation Fragment**!',
+          'The scattered **Constellation Fragments** have finally come together and regained their brilliant light! The **Darkie Planet**, once shrouded in silence, is now filled with **beautiful stories** again!',
+          'Now the **Darkie Planet** is no longer sad. Everyone is moved by your courage and perseverance and is cheering! All planets in the universe have regained their light thanks to you!',
+        ];
+      default:
+        return [
+          'Congratulations! Thanks to your amazing wisdom, you found the last piece of the star fragment!',
+          'The scattered star fragments have finally come together and regained their brilliant light!',
+          'Now the planet is no longer sad. Everyone is moved by your courage and perseverance and is cheering!',
         ];
     }
   }

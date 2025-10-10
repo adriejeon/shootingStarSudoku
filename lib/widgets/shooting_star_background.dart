@@ -49,20 +49,8 @@ class ShootingStarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var star in stars) {
-      // 별똥별 이미지 그리기
-      final Paint imagePaint = Paint()
-        ..colorFilter = ColorFilter.mode(
-          Colors.white.withOpacity(star.opacity.clamp(0.0, 1.0)),
-          BlendMode.modulate,
-        );
-
       // 이미지 크기 계산
       final double imageSize = star.size;
-      final Rect imageRect = Rect.fromCenter(
-        center: star.position,
-        width: imageSize,
-        height: imageSize,
-      );
 
       // 별똥별 이미지 그리기 (이미지가 로드되지 않은 경우를 대비해 원으로 대체)
       final Paint fallbackPaint = Paint()

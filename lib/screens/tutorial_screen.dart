@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart';
 import '../services/audio_service.dart';
 
 class TutorialScreen extends StatefulWidget {
@@ -101,44 +102,53 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   children: [
                     _buildIntroPage(),
                     _buildTutorialPage(
-                      title: '초급 (4×4)',
-                      subtitle: '스도쿠 기본 익히기',
+                      title: AppLocalizations.of(context)!.tutorialBeginner,
+                      subtitle: AppLocalizations.of(
+                        context,
+                      )!.tutorialBeginnerSubtitle,
                       gridSize: 4,
-                      description:
-                          '4×4 격자에서 1번부터 4번까지의 캐릭터를 사용합니다.\n각 행, 열, 그리고 2×2 박스에 1~4번 캐릭터가 한 번씩만 들어가야 해요!',
+                      description: AppLocalizations.of(
+                        context,
+                      )!.tutorialBeginnerDesc,
                       tips: [
-                        '• 각 행에는 1, 2, 3, 4번 캐릭터가 한 번씩만',
-                        '• 각 열에도 1, 2, 3, 4번 캐릭터가 한 번씩만',
-                        '• 각 2×2 박스에도 1, 2, 3, 4번 캐릭터가 한 번씩만',
-                        '• 이미 채워진 캐릭터는 고정이에요',
+                        AppLocalizations.of(context)!.rulesRow,
+                        AppLocalizations.of(context)!.rulesColumn,
+                        AppLocalizations.of(context)!.rulesBox4x4,
+                        AppLocalizations.of(context)!.rulesFixed,
                       ],
                       color: const Color(0xFF4CAF50),
                     ),
                     _buildTutorialPage(
-                      title: '중급 (6×6)',
-                      subtitle: '조금 더 복잡한 도전',
+                      title: AppLocalizations.of(context)!.tutorialIntermediate,
+                      subtitle: AppLocalizations.of(
+                        context,
+                      )!.tutorialIntermediateSubtitle,
                       gridSize: 6,
-                      description:
-                          '6×6 격자에서 1번부터 6번까지의 캐릭터를 사용합니다.\n각 행, 열, 그리고 3×2 박스에 1~6번 캐릭터가 한 번씩만 들어가야 해요!',
+                      description: AppLocalizations.of(
+                        context,
+                      )!.tutorialIntermediateDesc,
                       tips: [
-                        '• 각 행에는 1, 2, 3, 4, 5, 6번 캐릭터가 한 번씩만',
-                        '• 각 열에도 1, 2, 3, 4, 5, 6번 캐릭터가 한 번씩만',
-                        '• 각 3×2 박스에도 1~6번 캐릭터가 한 번씩만',
-                        '• 논리적 사고가 더 필요해요',
+                        AppLocalizations.of(context)!.rulesRow6x6,
+                        AppLocalizations.of(context)!.rulesColumn6x6,
+                        AppLocalizations.of(context)!.rulesBox6x6,
+                        AppLocalizations.of(context)!.rulesLogic6x6,
                       ],
                       color: const Color(0xFF2196F3),
                     ),
                     _buildTutorialPage(
-                      title: '고급 (9×9)',
-                      subtitle: '진짜 스도쿠 마스터 도전',
+                      title: AppLocalizations.of(context)!.tutorialAdvanced,
+                      subtitle: AppLocalizations.of(
+                        context,
+                      )!.tutorialAdvancedSubtitle,
                       gridSize: 9,
-                      description:
-                          '9×9 격자에서 1번부터 9번까지의 캐릭터를 사용합니다.\n각 행, 열, 그리고 3×3 박스에 1~9번 캐릭터가 한 번씩만 들어가야 해요!',
+                      description: AppLocalizations.of(
+                        context,
+                      )!.tutorialAdvancedDesc,
                       tips: [
-                        '• 각 행에는 1~9번 캐릭터가 한 번씩만',
-                        '• 각 열에도 1~9번 캐릭터가 한 번씩만',
-                        '• 각 3×3 박스에도 1~9번 캐릭터가 한 번씩만',
-                        '• 고도의 집중력과 논리가 필요해요',
+                        AppLocalizations.of(context)!.rulesRow9x9,
+                        AppLocalizations.of(context)!.rulesColumn9x9,
+                        AppLocalizations.of(context)!.rulesBox9x9,
+                        AppLocalizations.of(context)!.rulesLogic9x9,
                       ],
                       color: const Color(0xFFFF5722),
                     ),
@@ -173,9 +183,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
           ),
           const Spacer(),
           // 제목
-          const Text(
-            '게임 사용법',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.tutorialTitle,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -211,10 +221,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
           const SizedBox(height: 40),
 
           // 제목
-          const Text(
-            '별똥별 스도쿠에\n오신 것을 환영합니다!',
+          Text(
+            AppLocalizations.of(context)!.tutorialWelcome,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -236,10 +246,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
             child: Column(
               children: [
-                const Text(
-                  '별똥별 스도쿠는 캐릭터를 맞추는 퍼즐 게임이에요!\n각 행, 열, 박스에 캐릭터가 겹치지 않게\n배치하는 것이 목표입니다.',
+                Text(
+                  AppLocalizations.of(context)!.tutorialDescription,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     height: 1.5,
@@ -255,9 +265,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     color: Colors.amber.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    '초급부터 시작해서 차근차근 배워보세요!',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.tutorialStartTip,
+                    style: const TextStyle(
                       color: Colors.amber,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -344,9 +354,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
           const SizedBox(height: 20),
 
           // 규칙
-          const Text(
-            '게임 규칙',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.gameRules,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -374,48 +384,48 @@ class _TutorialScreenState extends State<TutorialScreen> {
           const SizedBox(height: 20),
 
           // 조작법
-          const Text(
-            '조작 방법',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.gameControls,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 10),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '1. 빈 칸을 터치하여 선택하세요',
-                style: TextStyle(
+                AppLocalizations.of(context)!.control1,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   height: 1.4,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                '2. 하단의 캐릭터 버튼을 눌러 캐릭터를 입력하세요',
-                style: TextStyle(
+                AppLocalizations.of(context)!.control2,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   height: 1.4,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                '3. 실수했다면 "돌리기" 버튼으로 되돌릴 수 있어요',
-                style: TextStyle(
+                AppLocalizations.of(context)!.control3,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   height: 1.4,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                '4. "지우기" 모드로 캐릭터를 삭제할 수도 있어요',
-                style: TextStyle(
+                AppLocalizations.of(context)!.control4,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   height: 1.4,

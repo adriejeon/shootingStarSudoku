@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../state/profile_manager_state.dart';
 import '../models/user_profile.dart';
 import '../utils/constants.dart';
@@ -35,7 +36,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('프로필 관리'),
+        title: Text(AppLocalizations.of(context)!.profileManagement),
         backgroundColor: const Color(AppConstants.backgroundColor),
         foregroundColor: Colors.white,
         actions: [
@@ -89,7 +90,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            '아직 프로필이 없습니다',
+            AppLocalizations.of(context)!.noProfiles,
             style: TextStyle(
               fontSize: 18,
               color: Colors.white.withOpacity(0.7),
@@ -102,9 +103,9 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
               backgroundColor: const Color(AppConstants.primaryColor),
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
             ),
-            child: const Text(
-              '첫 프로필 만들기',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            child: Text(
+              AppLocalizations.of(context)!.createFirstProfile,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -157,7 +158,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${activeProfile.totalStars} 별',
+                      '${activeProfile.totalStars} ${AppLocalizations.of(context)!.stars}',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.amber,
@@ -176,9 +177,9 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   color: Colors.green.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  '활성',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context)!.active,
+                  style: const TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -234,7 +235,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                 ),
               ),
               subtitle: Text(
-                '${profile.totalStars} 별',
+                '${profile.totalStars} ${AppLocalizations.of(context)!.stars}',
                 style: TextStyle(color: Colors.white.withOpacity(0.7)),
               ),
               trailing: PopupMenuButton<String>(
@@ -255,9 +256,18 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'select', child: Text('선택')),
-                  const PopupMenuItem(value: 'edit', child: Text('편집')),
-                  const PopupMenuItem(value: 'delete', child: Text('삭제')),
+                  PopupMenuItem(
+                    value: 'select',
+                    child: Text(AppLocalizations.of(context)!.select),
+                  ),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Text(AppLocalizations.of(context)!.edit),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(AppLocalizations.of(context)!.delete),
+                  ),
                 ],
               ),
             ),
@@ -274,19 +284,19 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('새 프로필 만들기'),
+        title: Text(AppLocalizations.of(context)!.createProfile),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '프로필 이름',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.profileName,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('아바타 선택'),
+            Text(AppLocalizations.of(context)!.avatarSelection),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -301,7 +311,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -313,7 +323,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                 Navigator.of(context).pop();
               }
             },
-            child: const Text('만들기'),
+            child: Text(AppLocalizations.of(context)!.create),
           ),
         ],
       ),
@@ -361,15 +371,15 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('프로필 편집'),
+        title: Text(AppLocalizations.of(context)!.editProfile),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '프로필 이름',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.profileName,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -377,7 +387,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -389,7 +399,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                 Navigator.of(context).pop();
               }
             },
-            child: const Text('저장'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -400,12 +410,14 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('프로필 삭제'),
-        content: Text('${profile.name} 프로필을 삭제하시겠습니까?'),
+        title: Text(AppLocalizations.of(context)!.deleteProfile),
+        content: Text(
+          AppLocalizations.of(context)!.deleteProfileConfirm(profile.name),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -413,7 +425,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('삭제'),
+            child: Text(AppLocalizations.of(context)!.delete),
           ),
         ],
       ),

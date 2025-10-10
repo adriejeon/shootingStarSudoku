@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
 import '../services/audio_service.dart';
 import '../widgets/stage_completion_dialog.dart';
 import '../models/game_save_state.dart';
 import '../ads/admob_handler.dart';
-import '../services/daily_game_service.dart';
 import 'dart:convert';
 
 class GameScreen extends StatefulWidget {
@@ -437,7 +437,9 @@ class _GameScreenState extends State<GameScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '실수 $_mistakeCount/$_maxMistakes - 이 위치에 해당 캐릭터를 넣을 수 없습니다',
+              AppLocalizations.of(
+                context,
+              )!.gameMistakeMessage(_mistakeCount, _maxMistakes),
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 1),
@@ -550,9 +552,9 @@ class _GameScreenState extends State<GameScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
-              '축하합니다!',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.gameSuccess,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -560,7 +562,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              '${_getPlanetTitle(widget.stageNumber, widget.levelNumber)} 완료!\n조각을 모두 모았습니다!\n\n완료 시간: ${_formatTime(_elapsedSeconds)}',
+              '${_getPlanetTitle(widget.stageNumber, widget.levelNumber)} ${AppLocalizations.of(context)!.gameCompleted}\n${AppLocalizations.of(context)!.gamePiecesCollected}\n\n${AppLocalizations.of(context)!.gameCompletionTime(_formatTime(_elapsedSeconds))}',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
@@ -580,17 +582,20 @@ class _GameScreenState extends State<GameScreen> {
                   // 홈으로 이동
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: const Text('홈으로', style: TextStyle(color: Colors.blue)),
+                child: Text(
+                  AppLocalizations.of(context)!.gameHome,
+                  style: const TextStyle(color: Colors.blue),
+                ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop(); // 다이얼로그 닫기
                   Navigator.of(context).pop(); // 게임 화면 닫기 (스테이지로 돌아가기)
                 },
-                child: const Text(
-                  '스테이지로',
-                  style: TextStyle(color: Colors.blue),
+                child: Text(
+                  AppLocalizations.of(context)!.gameStage,
+                  style: const TextStyle(color: Colors.blue),
                 ),
               ),
             ],
@@ -648,8 +653,29 @@ class _GameScreenState extends State<GameScreen> {
           child: SafeArea(
             child: Column(
               children: [
+                // 게임 정보 영역 (고정)
                 _buildGameInfo(),
-                Expanded(child: _buildGameGrid()),
+                // 스크롤 가능한 게임 영역
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight:
+                            MediaQuery.of(context).size.height -
+                            MediaQuery.of(context).padding.top -
+                            kToolbarHeight -
+                            200, // 게임 정보와 하단 패드 영역 고려
+                      ),
+                      child: Column(
+                        children: [
+                          _buildGameGrid(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // 하단 캐릭터 선택 영역 (고정)
                 _buildNumberPad(),
               ],
             ),
@@ -876,9 +902,9 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 20),
             // 실패 메시지
-            const Text(
-              '게임 실패!',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.gameFailure,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -887,8 +913,8 @@ class _GameScreenState extends State<GameScreen> {
             const SizedBox(height: 10),
             Text(
               _mistakeCount >= _maxMistakes
-                  ? '실수를 $_maxMistakes번 하였습니다.\n다시 시도해보세요!'
-                  : '더 이상 유효한 움직임이 없습니다.\n다시 시도해보세요!',
+                  ? AppLocalizations.of(context)!.gameMaxMistakes(_maxMistakes)
+                  : AppLocalizations.of(context)!.gameNoValidMoves,
               style: const TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -903,12 +929,12 @@ class _GameScreenState extends State<GameScreen> {
                   Navigator.of(context).pop(); // 다이얼로그 닫기
                   Navigator.of(context).pop(); // 게임 화면 닫기 (스테이지로 돌아가기)
                 },
-                child: const Text(
-                  '스테이지로',
-                  style: TextStyle(color: Colors.blue),
+                child: Text(
+                  AppLocalizations.of(context)!.gameStage,
+                  style: const TextStyle(color: Colors.blue),
                 ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               TextButton(
                 onPressed: () async {
                   Navigator.of(context).pop(); // 다이얼로그 닫기
@@ -928,9 +954,9 @@ class _GameScreenState extends State<GameScreen> {
                   _loadSavedGameWithResetMistakes();
                   _startTimer();
                 },
-                child: const Text(
-                  '이어서 하기',
-                  style: TextStyle(color: Colors.blue),
+                child: Text(
+                  AppLocalizations.of(context)!.gameContinue,
+                  style: const TextStyle(color: Colors.blue),
                 ),
               ),
             ],
@@ -1006,83 +1032,6 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // 게임 상태 확인 및 복원
-  Future<void> _checkAndLoadSavedGame() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedGameJson = prefs.getString('saved_game_state');
-
-      if (savedGameJson != null) {
-        final gameStateMap = jsonDecode(savedGameJson);
-        final gameState = GameSaveState.fromJson(gameStateMap);
-
-        // 현재 게임과 저장된 게임이 같은지 확인
-        if (gameState.stageNumber == widget.stageNumber &&
-            gameState.levelNumber == widget.levelNumber &&
-            gameState.difficulty == _getDifficultyString()) {
-          // 같은 게임인 경우에만 상태 복원
-          print('같은 게임 감지 - 상태 복원');
-          setState(() {
-            _grid = gameState.grid
-                .map(
-                  (row) => row.map((cell) => cell == 0 ? null : cell).toList(),
-                )
-                .toList();
-            _mistakeCount = gameState.mistakeCount;
-            _elapsedSeconds = gameState.elapsedSeconds;
-          });
-        } else {
-          // 다른 게임인 경우 저장된 상태 삭제
-          print('다른 게임 감지 - 저장된 상태 삭제');
-          await _clearSavedGame();
-        }
-      }
-
-      // 게임 상태가 깨끗한지 최종 확인
-      _ensureGameStateIsClean();
-    } catch (e) {
-      print('게임 상태 확인 실패: $e');
-      // 오류 발생 시 게임을 새로 초기화
-      _resetGameState();
-    }
-  }
-
-  // 게임 상태 복원
-  Future<void> _loadSavedGame() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedGameJson = prefs.getString('saved_game_state');
-
-      if (savedGameJson != null) {
-        final gameStateMap = jsonDecode(savedGameJson);
-        final gameState = GameSaveState.fromJson(gameStateMap);
-
-        // 현재 게임과 저장된 게임이 같은지 확인
-        if (gameState.stageNumber == widget.stageNumber &&
-            gameState.levelNumber == widget.levelNumber &&
-            gameState.difficulty == _getDifficultyString()) {
-          setState(() {
-            _grid = gameState.grid
-                .map(
-                  (row) => row.map((cell) => cell == 0 ? null : cell).toList(),
-                )
-                .toList();
-            _mistakeCount = gameState.mistakeCount;
-            _elapsedSeconds = gameState.elapsedSeconds;
-          });
-
-          print('게임 상태 복원 완료');
-        } else {
-          // 다른 게임인 경우 저장된 상태 삭제
-          print('다른 게임 시작 - 저장된 게임 상태 삭제');
-          await _clearSavedGame();
-        }
-      }
-    } catch (e) {
-      print('게임 상태 복원 실패: $e');
-    }
-  }
-
   // 게임 상태 복원 (실수 카운트 초기화)
   Future<void> _loadSavedGameWithResetMistakes() async {
     try {
@@ -1137,67 +1086,6 @@ class _GameScreenState extends State<GameScreen> {
     return 'hard';
   }
 
-  // 게임 상태가 깨끗한지 확인하고 필요시 초기화
-  void _ensureGameStateIsClean() {
-    bool needsReset = false;
-
-    // 실수 카운트가 최대값을 초과하거나 비정상적인 상태인 경우
-    if (_mistakeCount > _maxMistakes || _mistakeCount < 0) {
-      print('비정상적인 실수 카운트 감지: $_mistakeCount');
-      needsReset = true;
-    }
-
-    // 그리드가 비정상적인 상태인지 확인
-    for (int i = 0; i < _gridSize; i++) {
-      for (int j = 0; j < _gridSize; j++) {
-        if (_grid[i][j] != null &&
-            (_grid[i][j]! < 1 || _grid[i][j]! > _gridSize)) {
-          print('비정상적인 그리드 값 감지: ${_grid[i][j]} at ($i, $j)');
-          needsReset = true;
-          break;
-        }
-      }
-      if (needsReset) break;
-    }
-
-    // 게임이 이미 완료된 상태인지 확인
-    if (_isGameComplete()) {
-      print('게임이 이미 완료된 상태 감지');
-      needsReset = true;
-    }
-
-    if (needsReset) {
-      print('게임 상태 초기화 실행');
-      _resetGameState();
-    } else {
-      print('게임 상태 정상 - 실수: $_mistakeCount/$_maxMistakes');
-    }
-  }
-
-  // 게임 상태 완전 초기화
-  void _resetGameState() {
-    setState(() {
-      _mistakeCount = 0;
-      _elapsedSeconds = 0;
-      _selectedRow = -1;
-      _selectedCol = -1;
-      _selectedNumber = 1;
-      _isEraseMode = false;
-      _moveHistory.clear();
-
-      // 그리드 완전 재생성
-      _grid = List.generate(_gridSize, (_) => List.filled(_gridSize, null));
-      _isOriginal = List.generate(
-        _gridSize,
-        (_) => List.filled(_gridSize, false),
-      );
-    });
-
-    // 퍼즐 재생성
-    _generatePuzzle();
-    print('게임 상태 완전 초기화 완료');
-  }
-
   // 게임 리셋 처리 (일일 게임 카운팅 없음)
   Future<void> _handleResetGame() async {
     // 게임 리셋은 일일 카운팅에 포함되지 않음
@@ -1217,80 +1105,98 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   String _getPlanetTitle(int stageNumber, int levelNumber) {
+    final l10n = AppLocalizations.of(context)!;
     switch (stageNumber) {
       case 1:
-        return '빛의 조각 $levelNumber / 20';
+        return '${l10n.stage1Fragment} $levelNumber / 20';
       case 2:
-        return '멜로디 조각 $levelNumber / 20';
+        return '${l10n.stage2Fragment} $levelNumber / 20';
       case 3:
-        return '무지개 조각 $levelNumber / 20';
+        return '${l10n.stage3Fragment} $levelNumber / 20';
       case 4:
-        return '탱탱볼 조각 $levelNumber / 20';
+        return '${l10n.stage4Fragment} $levelNumber / 20';
       case 5:
-        return '지혜의 조각 $levelNumber / 20';
+        return '${l10n.stage5Fragment} $levelNumber / 20';
       case 6:
-        return '생명의 조각 $levelNumber / 20';
+        return '${l10n.stage6Fragment} $levelNumber / 20';
       case 7:
-        return '에너지 조각 $levelNumber / 20';
+        return '${l10n.stage7Fragment} $levelNumber / 20';
       case 8:
-        return '온기의 조각 $levelNumber / 20';
+        return '${l10n.stage8Fragment} $levelNumber / 20';
       case 9:
-        return '별자리 조각 $levelNumber / 20';
+        return '${l10n.stage9Fragment} $levelNumber / 20';
       default:
-        return '수수께끼 조각 $levelNumber / 20';
+        return '${l10n.stageDefaultFragment} $levelNumber / 20';
     }
   }
 
   Widget _buildGameInfo() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 화면 너비에 따라 레이아웃 결정 (더 작은 화면에서만 좁은 레이아웃 사용)
-        bool isNarrowScreen = constraints.maxWidth < 310;
+        // 화면 너비에 따라 레이아웃 결정
+        bool isVeryNarrowScreen = constraints.maxWidth < 280;
+        bool isNarrowScreen = constraints.maxWidth < 350;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           margin: const EdgeInsets.all(16),
-          child: isNarrowScreen ? _buildNarrowLayout() : _buildWideLayout(),
+          child: isVeryNarrowScreen
+              ? _buildVeryNarrowLayout()
+              : isNarrowScreen
+              ? _buildNarrowLayout()
+              : _buildWideLayout(),
         );
       },
     );
   }
 
   Widget _buildWideLayout() {
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 12,
       children: [
-        // 시간 표시 (1/4)
-        Expanded(flex: 1, child: _buildTimeInfo()),
-        // 실수 표시 (1/4)
-        Expanded(flex: 1, child: _buildMistakeInfo()),
-        // 실행취소 버튼 (1/4)
-        Expanded(flex: 1, child: _buildUndoButton()),
-        const SizedBox(width: 8),
-        // 지우기 버튼 (1/4)
-        Expanded(flex: 1, child: _buildEraseButton()),
+        // 시간 표시
+        _buildTimeInfo(),
+        // 실수 표시
+        _buildMistakeInfo(),
+        // 실행취소 버튼
+        _buildUndoButton(),
+        // 지우기 버튼
+        _buildEraseButton(),
       ],
     );
   }
 
   Widget _buildNarrowLayout() {
-    return Column(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 12,
       children: [
-        // 상단: 시간과 실수 정보
-        Row(
-          children: [
-            Expanded(flex: 1, child: _buildTimeInfo()),
-            Expanded(flex: 1, child: _buildMistakeInfo()),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // 하단: 버튼들
-        Row(
-          children: [
-            Expanded(flex: 1, child: _buildUndoButton()),
-            const SizedBox(width: 8),
-            Expanded(flex: 1, child: _buildEraseButton()),
-          ],
-        ),
+        // 시간 표시
+        _buildTimeInfo(),
+        // 실수 표시
+        _buildMistakeInfo(),
+        // 실행취소 버튼
+        _buildUndoButton(),
+        // 지우기 버튼
+        _buildEraseButton(),
+      ],
+    );
+  }
+
+  Widget _buildVeryNarrowLayout() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 12,
+      children: [
+        // 시간 표시
+        _buildTimeInfo(),
+        // 실수 표시
+        _buildMistakeInfo(),
+        // 실행취소 버튼
+        _buildUndoButton(),
+        // 지우기 버튼
+        _buildEraseButton(),
       ],
     );
   }
@@ -1305,7 +1211,7 @@ class _GameScreenState extends State<GameScreen> {
             Icon(Icons.access_time, size: 18, color: Colors.cyan),
             const SizedBox(width: 6),
             Text(
-              '시간',
+              AppLocalizations.of(context)!.gameTime,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
@@ -1336,12 +1242,14 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             Icon(Icons.error_outline, size: 18, color: Colors.red),
             const SizedBox(width: 6),
-            Text(
-              '실수',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            Flexible(
+              child: Text(
+                AppLocalizations.of(context)!.gameMistakes,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -1387,7 +1295,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(width: 4),
             Text(
-              '돌리기',
+              AppLocalizations.of(context)!.gameUndo,
               style: TextStyle(
                 color: _moveHistory.isNotEmpty ? Colors.orange : Colors.grey,
                 fontSize: 12,
@@ -1428,7 +1336,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(width: 4),
             Text(
-              '지우기',
+              AppLocalizations.of(context)!.gameErase,
               style: TextStyle(
                 color: _isEraseMode ? Colors.red : Colors.white70,
                 fontSize: 12,

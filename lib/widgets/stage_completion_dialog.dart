@@ -1,5 +1,6 @@
 import 'dart:math' hide log;
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/story_data.dart';
 import '../services/audio_service.dart';
 
@@ -46,7 +47,10 @@ class _StageCompletionDialogState extends State<StageCompletionDialog>
       vsync: this,
     );
 
-    _storyPages = StoryData.getStageCompletionStory(widget.stageNumber);
+    _storyPages = StoryData.getStageCompletionStory(
+      widget.stageNumber,
+      AppLocalizations.of(context),
+    );
 
     // 완료 사운드 재생
     AudioService().playFinishSound();
@@ -104,7 +108,10 @@ class _StageCompletionDialogState extends State<StageCompletionDialog>
   @override
   Widget build(BuildContext context) {
     final theme = StoryData.getStageTheme(widget.stageNumber);
-    final characterName = StoryData.getCharacterName(widget.stageNumber);
+    final characterName = StoryData.getCharacterName(
+      widget.stageNumber,
+      AppLocalizations.of(context),
+    );
 
     return Dialog(
       backgroundColor: Colors.transparent,

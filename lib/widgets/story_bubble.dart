@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/story_data.dart';
+import '../l10n/app_localizations.dart';
 
 class StoryBubble extends StatefulWidget {
   final int stageNumber;
@@ -67,8 +68,12 @@ class _StoryBubbleState extends State<StoryBubble>
     final storyText = StoryData.getStoryText(
       widget.stageNumber,
       widget.levelNumber,
+      AppLocalizations.of(context),
     );
-    final characterName = StoryData.getCharacterName(widget.stageNumber);
+    final characterName = StoryData.getCharacterName(
+      widget.stageNumber,
+      AppLocalizations.of(context),
+    );
     final theme = StoryData.getStageTheme(widget.stageNumber);
 
     if (storyText == null) return const SizedBox.shrink();

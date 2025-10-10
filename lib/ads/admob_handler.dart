@@ -3,6 +3,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:async';
+import '../utils/app_environment.dart';
 
 class AdmobHandler {
   // 싱글톤 구현
@@ -16,6 +17,24 @@ class AdmobHandler {
   // 광고 활성화 여부
   static bool isAdEnabled = true;
 
+  // Ad Unit IDs - 테스트 광고 ID
+  static const String _androidBannerTestId =
+      'ca-app-pub-3940256099942544/9214589741';
+  static const String _iosBannerTestId =
+      'ca-app-pub-3940256099942544/2435281174';
+  static const String _androidInterstitialTestId =
+      'ca-app-pub-3940256099942544/1033173712';
+  static const String _iosInterstitialTestId =
+      'ca-app-pub-3940256099942544/4411468910';
+
+  // Ad Unit IDs - 실제 광고 ID
+  static const String _androidBannerRealId = 'Android_배너_광고단위_아이디';
+  static const String _iosBannerRealId =
+      'ca-app-pub-9203710218960521/1416993873';
+  static const String _androidInterstitialRealId = 'Android_전면_광고단위_아이디';
+  static const String _iosInterstitialRealId =
+      'ca-app-pub-9203710218960521/3063874192';
+
   // 광고 상태 관리
   BannerAd? _bannerAd;
   InterstitialAd? _interstitialAd;
@@ -27,54 +46,60 @@ class AdmobHandler {
   }
 
   // 광고 ID 가져오기
-  String get _bannerAdUnitId {
+  Future<String> get _bannerAdUnitId async {
     if (!_isSupported) {
       isAdEnabled = false;
       return '';
     }
 
-    if (kDebugMode) {
+    // 앱스토어 버전일 때만 실제 광고 ID 사용
+    if (await AppEnvironment.isAppStore()) {
+      print("AdMob: Production environment detected. Using REAL ad units.");
       if (Platform.isAndroid) {
-        return 'ca-app-pub-3940256099942544/9214589741';
+        return _androidBannerRealId;
       }
       if (Platform.isIOS) {
-        return 'ca-app-pub-3940256099942544/2435281174';
+        return _iosBannerRealId;
       }
     }
 
+    // 그 외 모든 경우(Debug, TestFlight, Ad Hoc 등)는 테스트 광고 ID 사용
+    print("AdMob: Test/Debug environment detected. Using TEST ad units.");
     if (Platform.isAndroid) {
-      return 'Android_배너_광고단위_아이디';
+      return _androidBannerTestId;
     }
-    if (Platform.isIOS) {
-      return 'ca-app-pub-9203710218960521/1416993873';
-    }
-
-    return '';
+    // iOS
+    return _iosBannerTestId;
   }
 
-  String get _interstitialAdUnitId {
+  Future<String> get _interstitialAdUnitId async {
     if (!_isSupported) {
       isAdEnabled = false;
       return '';
     }
 
-    if (kDebugMode) {
+    // 앱스토어 버전일 때만 실제 광고 ID 사용
+    if (await AppEnvironment.isAppStore()) {
+      print(
+        "AdMob: Production environment detected. Using REAL interstitial ad units.",
+      );
       if (Platform.isAndroid) {
-        return 'ca-app-pub-3940256099942544/1033173712';
+        return _androidInterstitialRealId;
       }
       if (Platform.isIOS) {
-        return 'ca-app-pub-3940256099942544/4411468910';
+        return _iosInterstitialRealId;
       }
     }
 
+    // 그 외 모든 경우(Debug, TestFlight, Ad Hoc 등)는 테스트 광고 ID 사용
+    print(
+      "AdMob: Test/Debug environment detected. Using TEST interstitial ad units.",
+    );
     if (Platform.isAndroid) {
-      return 'Android_전면_광고단위_아이디';
+      return _androidInterstitialTestId;
     }
-    if (Platform.isIOS) {
-      return 'ca-app-pub-9203710218960521/3063874192';
-    }
-
-    return '';
+    // iOS
+    return _iosInterstitialTestId;
   }
 
   // 초기화
@@ -104,9 +129,9 @@ class AdmobHandler {
       print('AdMob: RequestConfiguration 설정 완료');
 
       // 배너 광고는 지연 로딩 (UI가 준비된 후)
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(seconds: 1), () async {
         if (_isSupported && isAdEnabled) {
-          _loadBannerAd();
+          await _loadBannerAd();
           print('AdMob: 배너 광고 로드 시작 (지연 로딩)');
         }
       });
@@ -129,8 +154,32 @@ class AdmobHandler {
 
   // 배너 광고 위젯
   Widget getBannerAd() {
-    if (!isAdEnabled || _bannerAd == null) {
-      return const SizedBox(height: 50);
+    if (!isAdEnabled) {
+      return Container(
+        height: 50,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Text(
+            '광고 비활성화',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    if (_bannerAd == null) {
+      return Container(
+        height: 50,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Text(
+            '광고 로딩 중...',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ),
+      );
     }
 
     return SizedBox(
@@ -141,12 +190,13 @@ class AdmobHandler {
   }
 
   // 배너 광고 로드
-  void _loadBannerAd() {
-    print('AdMob: 배너 광고 로드 시작 - ID: $_bannerAdUnitId');
+  Future<void> _loadBannerAd() async {
+    final adUnitId = await _bannerAdUnitId;
+    print('AdMob: 배너 광고 로드 시작 - ID: $adUnitId');
 
     _bannerAd = BannerAd(
       size: AdSize.banner,
-      adUnitId: _bannerAdUnitId,
+      adUnitId: adUnitId,
       listener: BannerAdListener(
         onAdLoaded: (ad) {
           print('AdMob: 배너 광고 로드 완료');
@@ -172,10 +222,11 @@ class AdmobHandler {
   Future<void> loadInterstitialAd() async {
     if (!isAdEnabled) return;
 
+    final adUnitId = await _interstitialAdUnitId;
     final completer = Completer<void>();
 
     await InterstitialAd.load(
-      adUnitId: _interstitialAdUnitId,
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -194,11 +245,13 @@ class AdmobHandler {
   }
 
   // 다음 광고 미리 로드 (대기하지 않음)
-  void preloadNextAd() {
+  Future<void> preloadNextAd() async {
     if (!isAdEnabled) return;
 
+    final adUnitId = await _interstitialAdUnitId;
+
     InterstitialAd.load(
-      adUnitId: _interstitialAdUnitId,
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../l10n/app_localizations.dart';
 import 'settings_screen.dart';
 import 'stage_screen.dart';
 import 'tutorial_screen.dart';
@@ -26,18 +27,61 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _starController;
   bool _bannerAdLoaded = false;
+  Locale _currentLocale = const Locale('ko', 'KR');
+  bool _isChangingLanguage = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _loadData();
+    _loadLanguagePreference();
     _startBackgroundMusic();
     _setupBannerAdCallback();
   }
 
+  void _loadLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLocale = prefs.getString('selected_locale') ?? 'ko';
+    setState(() {
+      _currentLocale = savedLocale == 'en'
+          ? const Locale('en', 'US')
+          : const Locale('ko', 'KR');
+    });
+  }
+
   void _startBackgroundMusic() async {
     await AudioService().playBackgroundMusic();
+  }
+
+  void _toggleLanguage() async {
+    setState(() {
+      _isChangingLanguage = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final newLocale = _currentLocale.languageCode == 'ko'
+        ? const Locale('en', 'US')
+        : const Locale('ko', 'KR');
+
+    await prefs.setString('selected_locale', newLocale.languageCode);
+
+    setState(() {
+      _currentLocale = newLocale;
+    });
+
+    // 앱을 다시 빌드하여 언어 변경 적용 (애니메이션 없이)
+    if (mounted) {
+      // 현재 화면을 유지하면서 언어만 변경
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const HomeScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    }
   }
 
   void _setupBannerAdCallback() {
@@ -147,12 +191,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // 배너 광고 위젯
   Widget _buildBannerAd() {
-    final adHandler = AdmobHandler();
-    final bannerAd = adHandler.bannerAd;
-
-    // 광고가 로드되었는지 실시간으로 확인
-    if (bannerAd == null) {
-      // 광고가 로드되지 않았을 때는 플레이스홀더 표시
+    // 언어 변경 중이거나 광고가 로드되지 않았을 때는 플레이스홀더 표시
+    if (_isChangingLanguage || !_bannerAdLoaded) {
       return Container(
         width: 320,
         height: 50,
@@ -160,21 +200,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           color: Colors.grey[800],
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            '광고 로딩 중...',
-            style: TextStyle(color: Colors.white, fontSize: 12),
+            AppLocalizations.of(context)!.adLoading,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ),
       );
     }
 
     // 광고가 로드되었으면 표시
-    return Container(
-      width: bannerAd.size.width.toDouble(),
-      height: bannerAd.size.height.toDouble(),
-      child: AdWidget(ad: bannerAd),
-    );
+    final adHandler = AdmobHandler();
+    final bannerAd = adHandler.bannerAd;
+
+    if (bannerAd != null) {
+      return Container(
+        width: bannerAd.size.width.toDouble(),
+        height: bannerAd.size.height.toDouble(),
+        child: AdWidget(ad: bannerAd),
+      );
+    } else {
+      // 광고 객체가 없으면 플레이스홀더 표시
+      return Container(
+        width: 320,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            AppLocalizations.of(context)!.adLoading,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -258,11 +319,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 아이패드에서는 타이틀 크기와 위치 조절
     final titleHeight = isTablet ? screenSize.height * 0.10 : 78.0;
 
-    return Image.asset(
-      'assets/images/main-title.png',
-      height: titleHeight,
-      fit: BoxFit.contain,
-    );
+    // 현재 언어에 따라 타이틀 이미지 선택
+    final titleImage = _currentLocale.languageCode == 'en'
+        ? 'assets/images/main-title-en.png'
+        : 'assets/images/main-title.png';
+
+    return Image.asset(titleImage, height: titleHeight, fit: BoxFit.contain);
   }
 
   Widget _buildContent(bool isTablet, Size screenSize) {
@@ -347,6 +409,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
                 child: Image.asset(
                   'assets/images/btn-setting.png',
+                  height: settingButtonHeight,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              SizedBox(width: isTablet ? 40 : 20),
+              // 언어 교체 버튼
+              GestureDetector(
+                onTap: () {
+                  _triggerHapticFeedback();
+                  _toggleLanguage();
+                },
+                child: Image.asset(
+                  _currentLocale.languageCode == 'ko'
+                      ? 'assets/images/lang_kr.png'
+                      : 'assets/images/lang_en.png',
                   height: settingButtonHeight,
                   fit: BoxFit.contain,
                 ),

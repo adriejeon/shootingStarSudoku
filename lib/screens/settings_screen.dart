@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/constants.dart';
 import '../services/audio_service.dart';
 
@@ -63,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (vibrationEnabled) {
         // 안드로이드에서 더 강력한 진동을 위해 vibration 패키지 사용
-        if (await Vibration.hasVibrator() ?? false) {
+        if (await Vibration.hasVibrator() == true) {
           await Vibration.vibrate(duration: 50);
         } else {
           // 폴백으로 HapticFeedback 사용
@@ -85,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('설정'),
+        title: Text(AppLocalizations.of(context)!.settingsTitle),
         backgroundColor: const Color(0xFF080C2B),
         foregroundColor: Colors.white,
       ),
@@ -97,12 +98,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _buildSettingsSection(
-                  title: '게임 설정',
+                  title: AppLocalizations.of(context)!.gameSettings,
                   children: [
                     _buildSwitchTile(
                       icon: Icons.music_note,
-                      title: '배경음악',
-                      subtitle: '게임 배경음악 재생',
+                      title: AppLocalizations.of(context)!.backgroundMusic,
+                      subtitle: AppLocalizations.of(
+                        context,
+                      )!.backgroundMusicDesc,
                       value: _backgroundMusicEnabled,
                       onChanged: (value) async {
                         setState(() {
@@ -114,8 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _buildSwitchTile(
                       icon: Icons.volume_up,
-                      title: '효과음',
-                      subtitle: '버튼 클릭 및 게임 효과음',
+                      title: AppLocalizations.of(context)!.soundEffects,
+                      subtitle: AppLocalizations.of(context)!.soundEffectsDesc,
                       value: _soundEffectsEnabled,
                       onChanged: (value) async {
                         setState(() {
@@ -127,8 +130,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _buildSwitchTile(
                       icon: Icons.vibration,
-                      title: '진동 효과',
-                      subtitle: '터치 시 진동 피드백',
+                      title: AppLocalizations.of(context)!.vibration,
+                      subtitle: AppLocalizations.of(context)!.vibrationDesc,
                       value: _vibrationEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -143,8 +146,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _buildSwitchTile(
                       icon: Icons.notifications,
-                      title: '알림',
-                      subtitle: '게임 관련 알림 수신',
+                      title: AppLocalizations.of(context)!.notifications,
+                      subtitle: AppLocalizations.of(context)!.notificationsDesc,
                       value: _notificationsEnabled,
                       onChanged: (value) {
                         setState(() {
@@ -157,33 +160,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
                 _buildSettingsSection(
-                  title: '정보',
+                  title: AppLocalizations.of(context)!.info,
                   children: [
                     _buildInfoTile(
                       icon: Icons.info,
-                      title: '앱 버전',
+                      title: AppLocalizations.of(context)!.appVersion,
                       subtitle: AppConstants.appVersion,
                     ),
                     _buildInfoTile(
                       icon: Icons.star,
-                      title: '개발자',
+                      title: AppLocalizations.of(context)!.developer,
                       subtitle: 'Adrie Jeon',
                     ),
                     _buildInfoTile(
                       icon: Icons.email,
-                      title: '문의하기',
-                      subtitle: 'support@shootingstarsudoku.com',
+                      title: AppLocalizations.of(context)!.contact,
+                      subtitle: AppLocalizations.of(context)!.contactEmail,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSettingsSection(
-                  title: '데이터',
+                  title: AppLocalizations.of(context)!.data,
                   children: [
                     _buildActionTile(
                       icon: Icons.refresh,
-                      title: '데이터 초기화',
-                      subtitle: '모든 게임 데이터를 삭제합니다',
+                      title: AppLocalizations.of(context)!.resetData,
+                      subtitle: AppLocalizations.of(context)!.resetDataDesc,
                       onTap: () {
                         _showResetDialog();
                       },
@@ -300,22 +303,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('데이터 초기화'),
-        content: const Text('모든 게임 데이터가 삭제됩니다.\n정말로 진행하시겠습니까?'),
+        title: Text(AppLocalizations.of(context)!.resetData),
+        content: Text(AppLocalizations.of(context)!.resetDataConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               // TODO: 데이터 초기화 로직 구현
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('데이터가 초기화되었습니다')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.dataResetComplete,
+                  ),
+                ),
+              );
             },
-            child: const Text('초기화', style: TextStyle(color: Colors.red)),
+            child: Text(
+              AppLocalizations.of(context)!.reset,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

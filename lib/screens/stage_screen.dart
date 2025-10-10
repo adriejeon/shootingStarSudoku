@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 import '../state/user_progress_state.dart';
 import '../utils/constants.dart';
 import '../widgets/story_bubble.dart';
@@ -27,12 +29,22 @@ class _StageScreenState extends State<StageScreen>
   late AnimationController _fadeController;
   late AnimationController _scaleController;
   late Animation<double> _fadeAnimation;
+  String _currentLocale = 'ko';
   late Animation<double> _scaleAnimation;
   bool _animationCompleted = false;
+
+  void _loadLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLocale = prefs.getString('selected_locale') ?? 'ko';
+    setState(() {
+      _currentLocale = savedLocale;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadLanguagePreference();
 
     // 애니메이션 컨트롤러 초기화
     _fadeController = AnimationController(
@@ -274,7 +286,9 @@ class _StageScreenState extends State<StageScreen>
           // ),
           // 타이틀 이미지 (왼쪽 정렬)
           Image.asset(
-            'assets/images/title${widget.stageNumber}.png',
+            _currentLocale == 'en'
+                ? 'assets/images/title${widget.stageNumber}-en.png'
+                : 'assets/images/title${widget.stageNumber}.png',
             height: titleHeight,
             fit: BoxFit.contain,
           ),
@@ -307,7 +321,7 @@ class _StageScreenState extends State<StageScreen>
                   height: iconSize,
                   fit: BoxFit.contain,
                 ),
-                tooltip: '행성 스토리',
+                tooltip: AppLocalizations.of(context)!.storyTitle,
               ),
             ),
           ),
@@ -764,50 +778,52 @@ class _StageScreenState extends State<StageScreen>
   }
 
   String _getStoryTitle() {
+    final l10n = AppLocalizations.of(context)!;
     switch (widget.stageNumber) {
       case 1:
-        return '반짝이 행성의 전설';
+        return l10n.stage1StoryTitle;
       case 2:
-        return '방울이 행성의 멜로디';
+        return l10n.stage2StoryTitle;
       case 3:
-        return '구름이 행성의 무지개';
+        return l10n.stage3StoryTitle;
       case 4:
-        return '꼬마젤리 행성의 축제';
+        return l10n.stage4StoryTitle;
       case 5:
-        return '똑똑이 행성의 도서관';
+        return l10n.stage5StoryTitle;
       case 6:
-        return '숲지기 행성의 생명';
+        return l10n.stage6StoryTitle;
       case 7:
-        return '꼬마번개 행성의 에너지';
+        return l10n.stage7StoryTitle;
       case 8:
-        return '따뜻이 행성의 온기';
+        return l10n.stage8StoryTitle;
       case 9:
-        return '어둠이 행성의 이야기';
+        return l10n.stage9StoryTitle;
       default:
-        return '우주의 신비';
+        return l10n.stageDefaultStoryTitle;
     }
   }
 
   String _getStoryContent() {
+    final l10n = AppLocalizations.of(context)!;
     switch (widget.stageNumber) {
       case 1:
-        return '''우주 한편에 반짝이는 것을 무엇보다 사랑하는 작은 요정 '반짝이'가 살고 있는 아름다운 행성이 있었습니다. 반짝이 행성은 수많은 반짝이는 별들로 가득했고, 반짝이는 그 별들과 함께 행복하게 살고 있었어요. 하지만 어느 날, 거대한 별똥별이 행성과 충돌하면서 모든 반짝이는 별들이 조각조각 흩어져 버렸습니다! 반짝이는 너무나 슬펐고, 흩어진 별 조각들을 다시 모아야만 행성의 빛을 되찾을 수 있다는 것을 알게 되었습니다.''';
+        return l10n.stage1StoryContent;
       case 2:
-        return '''이곳은 온 세상이 맑고 투명한 물로 이루어진 방울이 행성이에요. 행성의 별들은 '별방울'이라 불렸는데, 이 별방울들이 수면 위로 떠오를 때마다 아름다운 멜로디가 울려 퍼졌죠. 하지만 거대한 별똥별이 행성의 바다와 충돌하면서, 모든 별방울이 깨져버렸어요! 그 후로 방울이 행성의 아름다운 음악은 멈추고 말았답니다. 방울이는 깨진 별방울 조각을 다시 맞춰 행성의 멜로디를 되찾고 싶어 해요.''';
+        return l10n.stage2StoryContent;
       case 3:
-        return '''푹신푹신 구름으로 가득한 이곳은 구름이 행성이랍니다. 이곳의 별들은 '솜사탕 별'이라고 불렸어요. 낮에는 햇살을 머금고, 밤에는 스스로 무지갯빛을 내며 구름 세상을 아름답게 비춰주었죠. 별똥별이 부딪히는 바람에 솜사탕 별들이 산산조각 나면서, 행성은 온통 잿빛 구름에 갇히게 되었어요. 낮잠 자는 것을 가장 좋아했던 구름이는 알록달록한 꿈을 꾸기 위해 흩어진 별 조각을 모으기로 결심했어요.''';
+        return l10n.stage3StoryContent;
       case 4:
-        return '''말랑말랑! 탱글탱글! 온통 젤리로 만들어진 꼬마젤리 행성에 오신 것을 환영해요! 이곳의 별들은 '탱탱볼 별'이었어요. 통통 튀어 오를 때마다 달콤한 에너지를 만들어내서, 행성 전체가 신나는 축제 같았죠. 하지만 별똥별이 떨어진 후, 탱탱볼 별들은 조각나 바닥에 끈적이게 붙어버렸어요. 행성의 신나는 축제도 멈춰버렸죠. 장난꾸러기 꼬마젤리는 다시 행성을 방방 뛰게 만들기 위해 당신의 도움이 필요해요!''';
+        return l10n.stage4StoryContent;
       case 5:
-        return '''반짝이는 거대한 크리스탈이 지식의 숲을 이루는 이곳은 똑똑이 행성입니다. 행성의 별들은 '지혜의 별'이라 불리며, 그 빛 속에는 우주의 모든 지식과 이야기가 담겨 있었어요. 별똥별 충돌로 지혜의 별들이 조각나자, 행성의 모든 지식이 뒤죽박죽 섞여버렸습니다! 똑똑박사 똑똑이는 뒤섞인 지식을 바로잡고 행성의 위대한 도서관을 복원하기 위해 별 조각들을 맞추고 있어요.''';
+        return l10n.stage5StoryContent;
       case 6:
-        return '''싱그러운 풀과 나무가 가득한 이곳은 숲지기 행성이에요. 밤하늘의 별들은 '생명의 별'이라 불렸는데, 이 별빛을 받은 식물들은 마법처럼 무럭무럭 자라났답니다. 하지만 거대한 별똥별이 숲을 덮치면서 생명의 별들이 모두 조각나 버렸고, 행성의 식물들은 시들기 시작했어요. 마음씨 착한 숲지기는 사랑하는 숲을 되살리기 위해 흩어진 생명의 별 조각들을 애타게 찾고 있답니다.''';
+        return l10n.stage6StoryContent;
       case 7:
-        return '''찌릿찌릿! 짜릿한 에너지가 넘치는 이곳은 꼬마번개 행성이랍니다. 이곳의 별들은 '에너지 별'로, 행성 전체에 강력한 에너지를 공급해 주었어요. 덕분에 행성의 하늘에서는 매일 밤 멋진 번개 쇼가 펼쳐졌죠. 별똥별 충돌 이후, 에너지 별들이 모두 부서져 행성은 힘을 잃고 어두워졌어요. 활발한 꼬마번개는 이 조용한 어둠이 너무 심심해요! 어서 별 조각을 모아 다시 짜릿한 번개 쇼를 시작하고 싶어 해요.''';
+        return l10n.stage7StoryContent;
       case 8:
-        return '''포근한 사랑의 기운이 가득한 이곳은 따뜻이 행성이에요. 하늘에 떠 있는 별들은 '마음의 별'로, 언제나 따스한 온기를 행성 곳곳에 나눠주었답니다. 하지만 별똥별이 떨어지며 마음의 별들이 차갑게 조각나 버렸고, 행성에는 외롭고 쓸쓸한 기운이 퍼지기 시작했어요. 다정한 따뜻이는 모두의 마음을 다시 따뜻하게 만들기 위해 흩어진 마음의 별 조각들을 모으고 있어요.''';
+        return l10n.stage8StoryContent;
       case 9:
-        return '''고요한 어둠 속에서 가장 아름다운 밤하늘을 볼 수 있는 이곳은 어둠이 행성입니다. 이곳의 별들은 밤하늘에 커다란 그림을 그리는 '별자리 별'이었어요. 이 별자리들은 우주의 오래된 이야기를 들려주었죠. 별똥별이 별자리들을 흩어버린 후, 밤하늘의 위대한 이야기들도 모두 사라졌습니다. 신비로운 어둠이는 잊혀진 우주의 이야기를 되찾기 위해, 흩어진 별자리 조각들을 맞추려 합니다.''';
+        return l10n.stage9StoryContent;
       default:
         return '''우주의 신비로운 모험이 당신을 기다리고 있습니다.
 
@@ -848,7 +864,10 @@ class _StageScreenState extends State<StageScreen>
     bool isTablet,
     Size screenSize,
   ) {
-    final characterName = StoryData.getCharacterName(widget.stageNumber);
+    final characterName = StoryData.getCharacterName(
+      widget.stageNumber,
+      AppLocalizations.of(context),
+    );
     final theme = StoryData.getStageTheme(widget.stageNumber);
 
     return GestureDetector(
@@ -959,7 +978,7 @@ class _StageScreenState extends State<StageScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '도움말',
+                          AppLocalizations.of(context)!.help,
                           style: TextStyle(
                             fontSize: isTablet ? 12 : 10,
                             fontWeight: FontWeight.w600,
@@ -972,7 +991,7 @@ class _StageScreenState extends State<StageScreen>
                   const SizedBox(height: 8),
                   // 기본 메시지
                   Text(
-                    '어서 빛을 찾아주세요.',
+                    AppLocalizations.of(context)!.findLight,
                     style: TextStyle(
                       fontSize: isTablet ? 16 : 14,
                       fontWeight: FontWeight.w500,
@@ -1057,7 +1076,12 @@ class _StageScreenState extends State<StageScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      '${StoryData.getCharacterName(widget.stageNumber)}의 모험 기록',
+                      AppLocalizations.of(context)!.adventureRecord(
+                        StoryData.getCharacterName(
+                          widget.stageNumber,
+                          AppLocalizations.of(context),
+                        ),
+                      ),
                       style: const TextStyle(
                         color: Colors.amber,
                         fontSize: 20,
@@ -1097,6 +1121,7 @@ class _StageScreenState extends State<StageScreen>
                     final storyText = StoryData.getStoryText(
                       widget.stageNumber,
                       level,
+                      AppLocalizations.of(context),
                     );
 
                     return Container(
@@ -1114,7 +1139,7 @@ class _StageScreenState extends State<StageScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Level $level',
+                            AppLocalizations.of(context)!.level(level),
                             style: const TextStyle(
                               color: Colors.amber,
                               fontSize: 14,
