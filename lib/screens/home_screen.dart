@@ -9,6 +9,7 @@ import 'settings_screen.dart';
 import 'stage_screen.dart';
 import 'tutorial_screen.dart';
 import '../state/profile_manager_state.dart';
+import '../state/locale_state.dart';
 import '../services/data_service.dart';
 import '../services/audio_service.dart';
 // import '../services/daily_game_service.dart'; // 사용하지 않음
@@ -27,7 +28,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _starController;
   bool _bannerAdLoaded = false;
-  Locale _currentLocale = const Locale('ko', 'KR');
   bool _isChangingLanguage = false;
 
   @override
@@ -35,19 +35,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _initializeAnimations();
     _loadData();
-    _loadLanguagePreference();
     _startBackgroundMusic();
     _setupBannerAdCallback();
-  }
-
-  void _loadLanguagePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLocale = prefs.getString('selected_locale') ?? 'ko';
-    setState(() {
-      _currentLocale = savedLocale == 'en'
-          ? const Locale('en', 'US')
-          : const Locale('ko', 'KR');
-    });
   }
 
   void _startBackgroundMusic() async {
@@ -59,29 +48,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _isChangingLanguage = true;
     });
 
-    final prefs = await SharedPreferences.getInstance();
-    final newLocale = _currentLocale.languageCode == 'ko'
-        ? const Locale('en', 'US')
-        : const Locale('ko', 'KR');
-
-    await prefs.setString('selected_locale', newLocale.languageCode);
+    final localeState = Provider.of<LocaleState>(context, listen: false);
+    localeState.toggleLocale();
 
     setState(() {
-      _currentLocale = newLocale;
+      _isChangingLanguage = false;
     });
-
-    // 앱을 다시 빌드하여 언어 변경 적용 (애니메이션 없이)
-    if (mounted) {
-      // 현재 화면을 유지하면서 언어만 변경
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const HomeScreen(),
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    }
   }
 
   void _setupBannerAdCallback() {
@@ -249,85 +221,101 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
 
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(color: Color(0xFF0E132A)),
-        child: ShootingStarBackground(
-          numberOfStars: 3,
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // 화면 크기에 따른 레이아웃 조정
-                final screenHeight = constraints.maxHeight;
-                final isSmallScreen = screenHeight < 600;
-                final isVerySmallScreen = screenHeight < 500;
+    return Consumer<LocaleState>(
+      builder: (context, localeState, child) {
+        return Scaffold(
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(color: Color(0xFF0E132A)),
+            child: ShootingStarBackground(
+              numberOfStars: 3,
+              child: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 화면 크기에 따른 레이아웃 조정
+                    final screenHeight = constraints.maxHeight;
+                    final isSmallScreen = screenHeight < 600;
+                    final isVerySmallScreen = screenHeight < 500;
 
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: screenHeight),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          // 상단 여백
-                          SizedBox(
-                            height: isVerySmallScreen
-                                ? 20
-                                : isSmallScreen
-                                ? 40
-                                : 60,
-                          ),
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: screenHeight),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              // 상단 여백
+                              SizedBox(
+                                height: isVerySmallScreen
+                                    ? 20
+                                    : isSmallScreen
+                                    ? 40
+                                    : 60,
+                              ),
 
-                          // 메인 콘텐츠 (화면 중앙)
-                          Flexible(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                _buildHeader(isTablet, screenSize),
-                                _buildContent(isTablet, screenSize),
-                              ],
-                            ),
-                          ),
+                              // 메인 콘텐츠 (화면 중앙)
+                              Flexible(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    _buildHeader(
+                                      isTablet,
+                                      screenSize,
+                                      localeState,
+                                    ),
+                                    _buildContent(
+                                      isTablet,
+                                      screenSize,
+                                      localeState,
+                                    ),
+                                  ],
+                                ),
+                              ),
 
-                          // 하단 여백과 배너 광고
-                          SizedBox(
-                            height: isVerySmallScreen
-                                ? 20
-                                : isSmallScreen
-                                ? 40
-                                : 60,
+                              // 하단 여백과 배너 광고
+                              SizedBox(
+                                height: isVerySmallScreen
+                                    ? 20
+                                    : isSmallScreen
+                                    ? 40
+                                    : 60,
+                              ),
+                              // 배너 광고 (직접 처리)
+                              _buildBannerAd(),
+                              SizedBox(height: 20), // 하단 여백
+                            ],
                           ),
-                          // 배너 광고 (직접 처리)
-                          _buildBannerAd(),
-                          SizedBox(height: 20), // 하단 여백
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(bool isTablet, Size screenSize) {
+  Widget _buildHeader(bool isTablet, Size screenSize, LocaleState localeState) {
     // 아이패드에서는 타이틀 크기와 위치 조절
     final titleHeight = isTablet ? screenSize.height * 0.10 : 78.0;
 
     // 현재 언어에 따라 타이틀 이미지 선택
-    final titleImage = _currentLocale.languageCode == 'en'
+    final titleImage = localeState.currentLocale.languageCode == 'en'
         ? 'assets/images/main-title-en.png'
         : 'assets/images/main-title.png';
 
     return Image.asset(titleImage, height: titleHeight, fit: BoxFit.contain);
   }
 
-  Widget _buildContent(bool isTablet, Size screenSize) {
+  Widget _buildContent(
+    bool isTablet,
+    Size screenSize,
+    LocaleState localeState,
+  ) {
     // 화면 크기에 따른 버튼 크기와 간격 조절
     final screenHeight = screenSize.height;
     final isSmallScreen = screenHeight < 600;
@@ -421,9 +409,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   _toggleLanguage();
                 },
                 child: Image.asset(
-                  _currentLocale.languageCode == 'ko'
-                      ? 'assets/images/lang_kr.png'
-                      : 'assets/images/lang_en.png',
+                  localeState.currentLocale.languageCode == 'ko'
+                      ? 'assets/images/lang_en.png'
+                      : 'assets/images/lang_kr.png',
                   height: settingButtonHeight,
                   fit: BoxFit.contain,
                 ),

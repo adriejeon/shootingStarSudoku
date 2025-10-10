@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'state/game_state.dart';
 import 'state/user_progress_state.dart';
 import 'state/profile_manager_state.dart';
+import 'state/locale_state.dart';
 import 'models/user_profile.dart';
 import 'services/data_service.dart';
 import 'services/ad_service.dart'; // 더미 구현으로 활성화
@@ -58,17 +59,11 @@ class ShootingStarSudokuApp extends StatefulWidget {
 }
 
 class _ShootingStarSudokuAppState extends State<ShootingStarSudokuApp> {
-  String _currentLocale = 'ko';
-
-  Future<String> _getSavedLocale() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('selected_locale') ?? 'ko';
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleState()),
         ChangeNotifierProvider(create: (_) => GameState()),
         ChangeNotifierProvider(create: (_) => ProfileManagerState()),
         ChangeNotifierProxyProvider<ProfileManagerState, UserProgressState>(
@@ -80,20 +75,13 @@ class _ShootingStarSudokuAppState extends State<ShootingStarSudokuApp> {
           },
         ),
       ],
-      child: FutureBuilder<String>(
-        future: _getSavedLocale(),
-        builder: (context, snapshot) {
-          final savedLocale = snapshot.data ?? 'ko';
-          final locale = _currentLocale == 'ko' ? savedLocale : _currentLocale;
-          final currentLocale = locale == 'en'
-              ? const Locale('en', 'US')
-              : const Locale('ko', 'KR');
-
+      child: Consumer<LocaleState>(
+        builder: (context, localeState, child) {
           return MaterialApp(
             title: '별똥별 스도쿠',
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: currentLocale,
+            locale: localeState.currentLocale,
             onGenerateTitle: (context) => AppLocalizations.of(context)!.appName,
             theme: ThemeData(
               primarySwatch: Colors.blue,
@@ -135,6 +123,11 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeApp() async {
     try {
       print('AppInitializer: Starting initialization...');
+
+      // LocaleState 초기화
+      final localeState = Provider.of<LocaleState>(context, listen: false);
+      await localeState.loadSavedLocale();
+      print('AppInitializer: LocaleState initialized');
 
       // DataService 초기화 (강제로 다시 초기화)
       print('AppInitializer: Initializing DataService...');
