@@ -7,7 +7,12 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>별똥별 스도쿠</string>
+	<dict>
+		<key>en</key>
+		<string>Tale Sudoku</string>
+		<key>ko</key>
+		<string>별똥별 스도쿠</string>
+	</dict>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
