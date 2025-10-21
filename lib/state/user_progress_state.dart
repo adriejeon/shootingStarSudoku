@@ -148,6 +148,16 @@ class UserProgressState extends ChangeNotifier {
     return completed;
   }
 
+  // 레벨이 처음 완료되는지 확인 (이전에 완료한 적이 없는지)
+  bool isLevelFirstCompletion(int stageNumber, int levelNumber) {
+    if (_currentProfile == null) {
+      _loadCurrentProfile();
+      return true; // 프로필이 없으면 첫 완료로 간주
+    }
+    // 레벨이 이미 완료되어 있지 않으면 첫 완료
+    return !_currentProfile!.isLevelCompleted(stageNumber, levelNumber);
+  }
+
   // 스테이지 레벨 완료 처리
   void completeLevel(
     int stageNumber,

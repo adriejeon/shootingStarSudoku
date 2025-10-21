@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/story_data.dart';
 import '../services/audio_service.dart';
+import '../services/share_service.dart';
 
 class StageCompletionDialog extends StatefulWidget {
   final int stageNumber;
+  final int levelNumber;
   final VoidCallback onComplete;
 
   const StageCompletionDialog({
     super.key,
     required this.stageNumber,
+    required this.levelNumber,
     required this.onComplete,
   });
 
@@ -370,60 +373,103 @@ class _StageCompletionDialogState extends State<StageCompletionDialog>
   }
 
   Widget _buildControlSection(Map<String, dynamic> theme) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 이전 버튼
-          if (_currentPage > 0)
-            GestureDetector(
-              onTap: _previousPage,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
+          // 공유하기 버튼 (마지막 페이지에만 표시)
+          if (_currentPage == _storyPages.length - 1)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await ShareService.shareStageCompletion(
+                    stageNumber: widget.stageNumber,
+                    levelNumber: widget.levelNumber,
+                    context: context,
+                  );
+                },
+                icon: const Icon(Icons.share, size: 20),
+                label: Text(
+                  l10n.shareToFriends,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 24,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Color(theme['accentColor']),
+                  side: BorderSide(
+                    color: Color(theme['accentColor']),
+                    width: 2,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
-              ),
-            )
-          else
-            const SizedBox(width: 48),
-
-          // 중앙 빈 공간 (다음 버튼 제거)
-
-          // 다음/완료 버튼
-          GestureDetector(
-            onTap: _currentPage < _storyPages.length - 1
-                ? _nextPage
-                : widget.onComplete,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                _currentPage < _storyPages.length - 1
-                    ? Icons.arrow_forward
-                    : Icons.check,
-                color: Colors.white,
-                size: 24,
               ),
             ),
+          
+          // 네비게이션 버튼들
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // 이전 버튼
+              if (_currentPage > 0)
+                GestureDetector(
+                  onTap: _previousPage,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 48),
+
+              // 중앙 빈 공간
+
+              // 다음/완료 버튼
+              GestureDetector(
+                onTap: _currentPage < _storyPages.length - 1
+                    ? _nextPage
+                    : widget.onComplete,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    _currentPage < _storyPages.length - 1
+                        ? Icons.arrow_forward
+                        : Icons.check,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

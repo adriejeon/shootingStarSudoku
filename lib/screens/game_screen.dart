@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../utils/constants.dart';
 import '../state/user_progress_state.dart';
 import '../services/audio_service.dart';
+import '../services/share_service.dart';
 import '../widgets/stage_completion_dialog.dart';
 import '../models/game_save_state.dart';
 import '../ads/admob_handler.dart';
@@ -488,6 +489,7 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (context) => StageCompletionDialog(
         stageNumber: widget.stageNumber,
+        levelNumber: widget.levelNumber,
         onComplete: () {
           Navigator.of(context).pop(); // 다이얼로그 닫기
           Navigator.of(context).popUntil((route) => route.isFirst); // 홈으로 이동
@@ -569,6 +571,47 @@ class _GameScreenState extends State<GameScreen> {
           ],
         ),
         actions: [
+          // 공유하기 버튼 (모든 게임 완료 시 표시)
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 공유하기 버튼
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await ShareService.shareStageCompletion(
+                      stageNumber: widget.stageNumber,
+                      levelNumber: widget.levelNumber,
+                      context: context,
+                    );
+                  },
+                  icon: const Icon(Icons.share, size: 20),
+                  label: Text(
+                    AppLocalizations.of(context)!.shareToFriends,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.amber,
+                    side: const BorderSide(
+                      color: Colors.amber,
+                      width: 2,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+          
+          // 기존 버튼들
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

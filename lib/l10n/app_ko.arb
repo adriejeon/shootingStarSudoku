@@ -193,5 +193,12 @@
   "character7": "꼬마번개",
   "character8": "따뜻이",
   "character9": "어둠이",
-  "characterDefault": "우주친구"
+  "characterDefault": "우주친구",
+  
+  "shareTitle": "공유하기",
+  "shareViaKakao": "카카오톡으로 공유",
+  "shareViaSMS": "문자 메시지로 공유",
+  "shareKakaoFailed": "카카오톡 공유에 실패했습니다.",
+  "shareToFriends": "친구에게 자랑하기",
+  "playGameButton": "나도 게임하기"
 }

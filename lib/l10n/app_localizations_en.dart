@@ -549,4 +549,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get characterDefault => 'Space Friend';
+
+  @override
+  String get shareTitle => 'Share';
+
+  @override
+  String get shareViaKakao => 'Share via KakaoTalk';
+
+  @override
+  String get shareViaSMS => 'Share via SMS';
+
+  @override
+  String get shareKakaoFailed => 'Failed to share via KakaoTalk.';
+
+  @override
+  String get shareToFriends => 'Share with Friends';
+
+  @override
+  String get playGameButton => 'Play Game';
 }
