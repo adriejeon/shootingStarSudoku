@@ -6,7 +6,6 @@ import '../state/user_progress_state.dart';
 import '../utils/constants.dart';
 import '../widgets/story_bubble.dart';
 import '../models/story_data.dart';
-import '../services/daily_game_service.dart';
 import '../ads/admob_handler.dart';
 import 'game_screen.dart';
 
@@ -152,43 +151,22 @@ class _StageScreenState extends State<StageScreen>
     });
   }
 
-  // 게임 시작 처리 (일일 게임 카운팅 포함)
+  // 게임 시작 처리 (매번 광고 표시)
   Future<void> _handleGameStart(int difficulty, int levelNumber) async {
     try {
-      // 디버그 정보 출력
-      await DailyGameService.debugCurrentState();
+      print('게임 시작 - 광고 표시');
+      final adHandler = AdmobHandler();
 
-      // 현재 게임 횟수 확인
-      final currentCount = await DailyGameService.getTodayGameCount();
-      print('현재 게임 횟수: $currentCount');
-
-      // 게임 횟수 증가
-      await DailyGameService.incrementGameCount();
-
-      // 증가된 횟수로 광고 여부 확인
-      final newCount = currentCount + 1;
-      final shouldShowAd = newCount >= 2; // 3번째부터 (0, 1, 2...)
-
-      if (shouldShowAd) {
-        // 3번째 게임부터 광고 표시
-        print('일일 게임 광고 표시 - ${newCount + 1}번째 게임');
-        final adHandler = AdmobHandler();
-
-        // 광고가 준비되지 않았으면 먼저 로드
-        if (!adHandler.isInterstitialAdLoaded) {
-          print('일일 게임 광고 로드 중...');
-          await adHandler.loadInterstitialAd();
-        }
-
-        await adHandler.showInterstitialAd();
-
-        // 광고를 본 후 게임 화면으로 이동
-        _navigateToGame(difficulty, levelNumber);
-      } else {
-        // 1-2번째 게임은 광고 없이 바로 이동
-        print('무료 게임 - 광고 없이 진행');
-        _navigateToGame(difficulty, levelNumber);
+      // 광고가 준비되지 않았으면 먼저 로드
+      if (!adHandler.isInterstitialAdLoaded) {
+        print('게임 시작 광고 로드 중...');
+        await adHandler.loadInterstitialAd();
       }
+
+      await adHandler.showInterstitialAd();
+
+      // 광고를 본 후 게임 화면으로 이동
+      _navigateToGame(difficulty, levelNumber);
     } catch (e) {
       print('게임 시작 오류: $e');
       // 오류 발생 시에도 게임 화면으로 이동

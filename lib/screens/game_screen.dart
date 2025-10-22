@@ -596,10 +596,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.amber,
-                    side: const BorderSide(
-                      color: Colors.amber,
-                      width: 2,
-                    ),
+                    side: const BorderSide(color: Colors.amber, width: 2),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
@@ -610,7 +607,7 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(height: 16),
             ],
           ),
-          
+
           // 기존 버튼들
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -698,24 +695,18 @@ class _GameScreenState extends State<GameScreen> {
               children: [
                 // 게임 정보 영역 (고정)
                 _buildGameInfo(),
-                // 스크롤 가능한 게임 영역
+                // 게임 정보와 게임 그리드 사이의 간격
+                const SizedBox(height: 8),
+                // 게임 그리드 영역 (상단 정렬)
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight:
-                            MediaQuery.of(context).size.height -
-                            MediaQuery.of(context).padding.top -
-                            kToolbarHeight -
-                            200, // 게임 정보와 하단 패드 영역 고려
-                      ),
-                      child: Column(
-                        children: [
-                          _buildGameGrid(),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 게임 그리드
+                      _buildGameGrid(),
+                      // 하단 여백
+                      const Spacer(),
+                    ],
                   ),
                 ),
                 // 하단 캐릭터 선택 영역 (고정)
@@ -1181,8 +1172,8 @@ class _GameScreenState extends State<GameScreen> {
         bool isNarrowScreen = constraints.maxWidth < 350;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(top: 20),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: isVeryNarrowScreen
               ? _buildVeryNarrowLayout()
               : isNarrowScreen
@@ -1194,119 +1185,96 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildWideLayout() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 시간 표시
-        _buildTimeInfo(),
-        // 실수 표시
-        _buildMistakeInfo(),
-        // 실행취소 버튼
-        _buildUndoButton(),
-        // 지우기 버튼
-        _buildEraseButton(),
+        // 왼쪽: 시간과 실수 정보
+        Row(
+          children: [
+            _buildTimeInfo(),
+            const SizedBox(width: 8),
+            _buildMistakeInfo(),
+          ],
+        ),
+        // 오른쪽: 실행취소와 지우기 버튼
+        Row(
+          children: [
+            _buildUndoButton(),
+            const SizedBox(width: 8),
+            _buildEraseButton(),
+          ],
+        ),
       ],
     );
   }
 
   Widget _buildNarrowLayout() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 시간 표시
-        _buildTimeInfo(),
-        // 실수 표시
-        _buildMistakeInfo(),
-        // 실행취소 버튼
-        _buildUndoButton(),
-        // 지우기 버튼
-        _buildEraseButton(),
+        // 왼쪽: 시간과 실수 정보
+        Row(
+          children: [
+            _buildTimeInfo(),
+            const SizedBox(width: 8),
+            _buildMistakeInfo(),
+          ],
+        ),
+        // 오른쪽: 실행취소와 지우기 버튼
+        Row(
+          children: [
+            _buildUndoButton(),
+            const SizedBox(width: 8),
+            _buildEraseButton(),
+          ],
+        ),
       ],
     );
   }
 
   Widget _buildVeryNarrowLayout() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 시간 표시
-        _buildTimeInfo(),
-        // 실수 표시
-        _buildMistakeInfo(),
-        // 실행취소 버튼
-        _buildUndoButton(),
-        // 지우기 버튼
-        _buildEraseButton(),
+        // 왼쪽: 시간과 실수 정보
+        Row(
+          children: [
+            _buildTimeInfo(),
+            const SizedBox(width: 8),
+            _buildMistakeInfo(),
+          ],
+        ),
+        // 오른쪽: 실행취소와 지우기 버튼
+        Row(
+          children: [
+            _buildUndoButton(),
+            const SizedBox(width: 8),
+            _buildEraseButton(),
+          ],
+        ),
       ],
     );
   }
 
   Widget _buildTimeInfo() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.access_time, size: 18, color: Colors.cyan),
-            const SizedBox(width: 6),
-            Text(
-              AppLocalizations.of(context)!.gameTime,
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _formatTime(_elapsedSeconds),
-          style: TextStyle(
-            color: Colors.cyan,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+    return Text(
+      _formatTime(_elapsedSeconds),
+      style: TextStyle(
+        color: Colors.grey[300],
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 
   Widget _buildMistakeInfo() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 18, color: Colors.red),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                AppLocalizations.of(context)!.gameMistakes,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '$_mistakeCount/$_maxMistakes',
-          style: TextStyle(
-            color: Colors.red,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+    return Text(
+      '실수: $_mistakeCount/$_maxMistakes',
+      style: TextStyle(
+        color: Colors.red[300],
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
     );
   }
 

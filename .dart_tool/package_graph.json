@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "shooting_star_sudoku",
-      "version": "1.1.1+11",
+      "version": "1.1.1+14",
       "dependencies": [
         "audioplayers",
         "cupertino_icons",

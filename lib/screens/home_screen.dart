@@ -73,26 +73,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     });
 
-    // 주기적으로 광고 상태 확인 (폴백) - 여러 번 체크
-    _checkBannerAdStatus(1);
-    _checkBannerAdStatus(2);
-    _checkBannerAdStatus(3);
-    _checkBannerAdStatus(5);
+    // 광고 상태 즉시 확인
+    _checkBannerAdStatus(0);
   }
 
   void _checkBannerAdStatus(int seconds) {
-    Future.delayed(Duration(seconds: seconds), () {
+    if (seconds == 0) {
+      // 즉시 실행
       if (mounted) {
         final adHandler = AdmobHandler();
         final isLoaded = adHandler.bannerAd != null;
         if (isLoaded != _bannerAdLoaded) {
           setState(() {
             _bannerAdLoaded = isLoaded;
-            print('HomeScreen: 배너 광고 상태 재확인 ($seconds초) - $_bannerAdLoaded');
+            print('HomeScreen: 배너 광고 상태 즉시 확인 - $_bannerAdLoaded');
           });
         }
       }
-    });
+    } else {
+      // 지연 실행 (필요시에만)
+      Future.delayed(Duration(seconds: seconds), () {
+        if (mounted) {
+          final adHandler = AdmobHandler();
+          final isLoaded = adHandler.bannerAd != null;
+          if (isLoaded != _bannerAdLoaded) {
+            setState(() {
+              _bannerAdLoaded = isLoaded;
+              print('HomeScreen: 배너 광고 상태 재확인 ($seconds초) - $_bannerAdLoaded');
+            });
+          }
+        }
+      });
+    }
   }
 
   void _initializeAnimations() {

@@ -538,20 +538,5 @@ class AppLocalizationsKo extends AppLocalizations {
   String get characterDefault => '우주친구';
 
   @override
-  String get shareTitle => '공유하기';
-
-  @override
-  String get shareViaKakao => '카카오톡으로 공유';
-
-  @override
-  String get shareViaSMS => '문자 메시지로 공유';
-
-  @override
-  String get shareKakaoFailed => '카카오톡 공유에 실패했습니다.';
-
-  @override
   String get shareToFriends => '친구에게 자랑하기';
-
-  @override
-  String get playGameButton => '나도 게임하기';
 }

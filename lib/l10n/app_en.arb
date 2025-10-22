@@ -195,10 +195,5 @@
   "character9": "Darkie",
   "characterDefault": "Space Friend",
   
-  "shareTitle": "Share",
-  "shareViaKakao": "Share via KakaoTalk",
-  "shareViaSMS": "Share via SMS",
-  "shareKakaoFailed": "Failed to share via KakaoTalk.",
-  "shareToFriends": "Share with Friends",
-  "playGameButton": "Play Game"
+  "shareToFriends": "Share with Friends"
 }

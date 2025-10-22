@@ -1094,41 +1094,11 @@ abstract class AppLocalizations {
   /// **'우주친구'**
   String get characterDefault;
 
-  /// No description provided for @shareTitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'공유하기'**
-  String get shareTitle;
-
-  /// No description provided for @shareViaKakao.
-  ///
-  /// In ko, this message translates to:
-  /// **'카카오톡으로 공유'**
-  String get shareViaKakao;
-
-  /// No description provided for @shareViaSMS.
-  ///
-  /// In ko, this message translates to:
-  /// **'문자 메시지로 공유'**
-  String get shareViaSMS;
-
-  /// No description provided for @shareKakaoFailed.
-  ///
-  /// In ko, this message translates to:
-  /// **'카카오톡 공유에 실패했습니다.'**
-  String get shareKakaoFailed;
-
   /// No description provided for @shareToFriends.
   ///
   /// In ko, this message translates to:
   /// **'친구에게 자랑하기'**
   String get shareToFriends;
-
-  /// No description provided for @playGameButton.
-  ///
-  /// In ko, this message translates to:
-  /// **'나도 게임하기'**
-  String get playGameButton;
 }
 
 class _AppLocalizationsDelegate
